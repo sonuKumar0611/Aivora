@@ -29,7 +29,7 @@ export default function LandingPage() {
           className="absolute inset-0 w-full h-full"
         />
       </div>
-      <header className="absolute top-0 left-0 right-0 z-20 border-b border-white/10 glass">
+      <header className="sticky top-0 left-0 right-0 z-20 border-b border-white/10 glass">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <Image
