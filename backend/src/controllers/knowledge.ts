@@ -125,3 +125,23 @@ export async function listKnowledge(req: AuthRequest, res: Response, next: NextF
     next(err);
   }
 }
+
+export async function deleteKnowledgeSource(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const userId = req.user!.id;
+    const { botId, sourceId } = req.params;
+    const bot = await Bot.findOne({ _id: botId, userId });
+    if (!bot) {
+      res.status(404).json({ error: 'Not found', message: 'Bot not found' });
+      return;
+    }
+    const result = await KnowledgeChunk.deleteMany({ botId: bot._id, sourceId });
+    if (result.deletedCount === 0) {
+      res.status(404).json({ error: 'Not found', message: 'Knowledge source not found' });
+      return;
+    }
+    res.json({ data: { deleted: result.deletedCount }, message: 'Source deleted' });
+  } catch (err) {
+    next(err);
+  }
+}

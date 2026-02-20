@@ -8,5 +8,6 @@ router.use(authMiddleware);
 
 router.post('/upload', knowledgeController.uploadMiddleware, knowledgeController.uploadKnowledge);
 router.get('/:botId', knowledgeController.listKnowledge);
+router.delete('/:botId/source/:sourceId', knowledgeController.deleteKnowledgeSource);
 
 export default router;

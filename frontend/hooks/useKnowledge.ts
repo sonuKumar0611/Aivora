@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 
 export interface KnowledgeSource {
@@ -11,6 +11,7 @@ export interface KnowledgeSource {
 }
 
 export function useKnowledge(botId: string | null) {
+  const queryClient = useQueryClient();
   const { data: sources = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['knowledge', botId],
     queryFn: async (): Promise<KnowledgeSource[]> => {
@@ -20,5 +21,15 @@ export function useKnowledge(botId: string | null) {
     },
     enabled: !!botId,
   });
-  return { sources, isLoading, isError, refetch };
+
+  const deleteSource = useMutation({
+    mutationFn: async ({ botId, sourceId }: { botId: string; sourceId: string }) => {
+      await api.delete(`/knowledge/${botId}/source/${sourceId}`);
+    },
+    onSuccess: (_, { botId }) => {
+      queryClient.invalidateQueries({ queryKey: ['knowledge', botId] });
+    },
+  });
+
+  return { sources, isLoading, isError, refetch, deleteSource };
 }
