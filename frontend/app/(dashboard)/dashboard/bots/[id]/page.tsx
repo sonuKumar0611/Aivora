@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useBot, useBots } from '@/hooks/useBots';
 import { useKnowledge } from '@/hooks/useKnowledge';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -12,11 +13,20 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { TONE_OPTIONS, BOT_TYPE_OPTIONS } from '@/lib/constants';
 import toast from 'react-hot-toast';
 import { getErrorMessage } from '@/lib/api';
-import { ArrowLeft, Code, BookOpen, User, Settings, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Code, BookOpen, User, Settings, MessageSquare, BarChart3, MessageCircle } from 'lucide-react';
 import { TestChatPanel } from '@/components/dashboard/TestChatPanel';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from 'recharts';
 
-type TabId = 'profile' | 'kb' | 'chat' | 'preview' | 'settings';
+type TabId = 'profile' | 'kb' | 'chat' | 'preview' | 'settings' | 'analytics';
 
 export default function BotEditPage() {
   const params = useParams();
@@ -25,6 +35,15 @@ export default function BotEditPage() {
   const { bot, isLoading, isError, refetch } = useBot(id);
   const { updateBot, deleteBot, publishBot } = useBots();
   const { sources, isLoading: sourcesLoading } = useKnowledge();
+  const {
+    totalConversations,
+    totalMessages,
+    dailyUsage,
+    topKeywords,
+    isLoading: analyticsLoading,
+    isError: analyticsError,
+    refetch: refetchAnalytics,
+  } = useAnalytics(id);
   const [activeTab, setActiveTab] = useState<TabId>('profile');
 
   const [name, setName] = useState('');
@@ -159,6 +178,7 @@ export default function BotEditPage() {
   const tabs: { id: TabId; label: string; icon: typeof User }[] = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'kb', label: 'Knowledge base', icon: BookOpen },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'chat', label: 'Test Chat', icon: MessageSquare },
     { id: 'preview', label: 'Preview script', icon: Code },
     { id: 'settings', label: 'Settings', icon: Settings },
@@ -354,6 +374,124 @@ export default function BotEditPage() {
             </form>
           </CardContent>
         </Card>
+      )}
+
+      {/* Tab: Analytics */}
+      {activeTab === 'analytics' && (
+        <div className="space-y-6">
+          {analyticsLoading ? (
+            <>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Skeleton className="h-24 rounded-xl" />
+                <Skeleton className="h-24 rounded-xl" />
+              </div>
+              <Card>
+                <CardHeader><Skeleton className="h-5 w-32" /></CardHeader>
+                <CardContent>
+                  <Skeleton className="h-64 w-full rounded-lg" />
+                </CardContent>
+              </Card>
+            </>
+          ) : analyticsError ? (
+            <Card>
+              <CardContent className="py-12">
+                <ErrorState onRetry={() => refetchAnalytics()} />
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-lg bg-brand-border p-3">
+                        <MessageCircle className="w-6 h-6 text-brand-textMuted" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-semibold text-brand-textHeading">
+                          {totalConversations}
+                        </p>
+                        <p className="text-sm text-brand-textMuted">Total conversations</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-lg bg-brand-border p-3">
+                        <MessageSquare className="w-6 h-6 text-brand-textMuted" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-semibold text-brand-textHeading">
+                          {totalMessages}
+                        </p>
+                        <p className="text-sm text-brand-textMuted">Total messages</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <h2 className="font-semibold text-brand-textHeading">Daily usage</h2>
+                  <p className="text-sm text-brand-textMuted">Conversations per day (last 30 days)</p>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64">
+                    {dailyUsage.length === 0 ? (
+                      <div className="h-full flex items-center justify-center text-brand-textMuted text-sm">
+                        No data yet
+                      </div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={dailyUsage} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" className="stroke-brand-border" />
+                          <XAxis dataKey="date" tick={{ fontSize: 12 }} className="text-brand-textMuted" />
+                          <YAxis tick={{ fontSize: 12 }} className="text-brand-textMuted" />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: 'hsl(var(--card))',
+                              border: '1px solid hsl(var(--border))',
+                              borderRadius: '8px',
+                            }}
+                            labelStyle={{ color: 'hsl(var(--card-foreground))' }}
+                          />
+                          <Bar dataKey="conversations" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <h2 className="font-semibold text-brand-textHeading">Most asked topics</h2>
+                  <p className="text-sm text-brand-textMuted">Keyword frequency in messages</p>
+                </CardHeader>
+                <CardContent>
+                  {topKeywords.length === 0 ? (
+                    <p className="text-sm text-brand-textMuted">No keywords yet. Chat with your bot to see trends.</p>
+                  ) : (
+                    <ul className="flex flex-wrap gap-2">
+                      {topKeywords.map((k) => (
+                        <li
+                          key={k.word}
+                          className="rounded-lg bg-brand-border px-3 py-1.5 text-sm text-brand-textHeading"
+                        >
+                          <span className="font-medium">{k.word}</span>
+                          <span className="ml-1 text-brand-textMuted">({k.count})</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </div>
       )}
 
       {/* Tab: Test Chat */}
