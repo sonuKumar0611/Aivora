@@ -101,9 +101,26 @@ export default function LandingPage() {
         <NewsletterSection />
       </main>
 
-      <footer className="py-8">
-        <div className="max-w-6xl mx-auto px-4 text-center text-sm text-brand-textMuted">
-          Aivora – AI Customer Support Automation
+      <footer className="relative z-10 border-t border-white/10 bg-brand-bg/80 backdrop-blur-md">
+        <div className="max-w-6xl mx-auto px-4 py-12 sm:py-14">
+          <div className="flex flex-col sm:flex-row items-start gap-4">
+            <Link href="/" className="flex flex-col sm:flex-row items-center sm:items-center gap-4 group">
+              <Image
+                src="/aivora.png"
+                alt="Aivora"
+                width={140}
+                height={42}
+                className="h-10 w-auto object-contain opacity-95 group-hover:opacity-100 transition-opacity"
+              />
+              <span className="text-brand-textMuted text-sm max-w-xs text-left">
+                AI Customer Support Automation — scale support without the wait.
+              </span>
+            </Link>
+          </div>
+          <div className="mt-10 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-brand-textMuted/80">
+            <p>© {new Date().getFullYear()} Aivora. All rights reserved.</p>
+            <p>Build AI support in minutes — no code required.</p>
+          </div>
         </div>
       </footer>
     </div>
