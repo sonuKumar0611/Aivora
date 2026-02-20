@@ -23,8 +23,10 @@ api.interceptors.response.use(
   (res) => res,
   (err: AxiosError<{ error?: string; message?: string }>) => {
     if (err.response?.status === 401 && typeof window !== 'undefined') {
-      const isMeRequest = err.config?.url?.includes('/auth/me');
-      if (!isMeRequest) {
+      const url = err.config?.url ?? '';
+      const isAuthEndpoint =
+        url.includes('/auth/me') || url.includes('/auth/login') || url.includes('/auth/signup');
+      if (!isAuthEndpoint) {
         localStorage.removeItem('aivora_token');
         window.location.href = '/login';
       }

@@ -243,7 +243,8 @@ body {
   border-left: 3px solid #22C55E !important;
 }
 .aivora-toast-error {
-  border-left: 3px solid #EF4444 !important;
+  border-left: 4px solid #F87171 !important;
+  color: #FEE2E2 !important;
 }
 @keyframes toast-slide-in {
   from {

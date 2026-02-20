@@ -46,14 +46,14 @@ const toastOptions = {
   },
   error: {
     className: 'aivora-toast aivora-toast-error',
-    iconTheme: { primary: '#EF4444', secondary: '#111827' },
+    iconTheme: { primary: '#FCA5A5', secondary: 'rgba(127, 29, 29, 0.95)' },
     style: {
-      background: '#111827',
-      color: '#E5E7EB',
-      border: '1px solid rgba(239, 68, 68, 0.4)',
+      background: 'rgba(127, 29, 29, 0.95)',
+      color: '#FEE2E2',
+      border: '1px solid rgba(248, 113, 113, 0.5)',
       borderRadius: '12px',
       padding: '14px 18px',
-      boxShadow: '0 10px 40px -10px rgba(0,0,0,0.4), 0 0 20px -5px rgba(239, 68, 68, 0.15)',
+      boxShadow: '0 10px 40px -10px rgba(0,0,0,0.4), 0 0 20px -5px rgba(239, 68, 68, 0.2)',
     },
   },
   loading: {

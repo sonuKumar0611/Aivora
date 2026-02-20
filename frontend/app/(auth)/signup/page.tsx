@@ -4,7 +4,6 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
-import toast from 'react-hot-toast';
 import { getErrorMessage } from '@/lib/api';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 import { validateSignupForm } from '@/lib/validation';
@@ -40,9 +39,7 @@ export default function SignupPage() {
       { email: email.trim(), password },
       {
         onError: (err) => {
-          const msg = getErrorMessage(err);
-          setApiError(msg);
-          toast.error(msg, { id: 'signup-error' });
+          setApiError(getErrorMessage(err));
         },
       }
     );
