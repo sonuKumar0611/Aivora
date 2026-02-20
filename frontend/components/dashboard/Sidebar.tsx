@@ -60,8 +60,8 @@ export function Sidebar() {
   return (
     <aside
       className={clsx(
-        'flex-shrink-0 flex flex-col border-r border-brand-border bg-brand-sidebar transition-[width] duration-300 ease-in-out',
-        'relative',
+        'flex-shrink-0 h-full flex flex-col border-r border-brand-border bg-brand-sidebar transition-[width] duration-300 ease-in-out',
+        'relative overflow-hidden',
         collapsed ? 'w-[72px]' : 'w-56'
       )}
     >

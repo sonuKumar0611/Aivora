@@ -16,7 +16,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-row bg-brand-bg">
+      <div className="h-screen overflow-hidden flex flex-row bg-brand-bg">
         <div className="w-56 flex-shrink-0 border-r border-brand-border bg-brand-sidebar animate-pulse">
           <div className="h-14 m-4 rounded-lg bg-brand-border" />
           <div className="space-y-2 px-4">
@@ -40,10 +40,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen flex bg-brand-bg">
+    <div className="h-screen overflow-hidden flex flex-row bg-brand-bg">
       <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0">
-        <main className="flex-1 p-6 overflow-auto">{children}</main>
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
+        <main className="flex-1 min-h-0 p-6 overflow-auto">{children}</main>
       </div>
     </div>
   );
