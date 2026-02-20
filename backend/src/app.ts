@@ -8,6 +8,7 @@ import botsRoutes from './routes/bots';
 import knowledgeRoutes from './routes/knowledge';
 import chatRoutes from './routes/chat';
 import analyticsRoutes from './routes/analytics';
+import newsletterRoutes from './routes/newsletter';
 
 const app = express();
 
@@ -36,11 +37,19 @@ const chatLimiter = rateLimit({
 });
 app.use('/api/chat', chatLimiter);
 
+const newsletterLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  message: { error: 'Too many signup attempts', message: 'Try again later' },
+});
+app.use('/api/newsletter', newsletterLimiter);
+
 app.use('/api/auth', authRoutes);
 app.use('/api/bots', botsRoutes);
 app.use('/api/knowledge', knowledgeRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/newsletter', newsletterRoutes);
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

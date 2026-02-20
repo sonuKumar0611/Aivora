@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { FeaturesSection } from '@/components/FeaturesSection';
 import { HowItWorksSection } from '@/components/HowItWorksSection';
 import { PricingSection } from '@/components/PricingSection';
+import { NewsletterSection } from '@/components/NewsletterSection';
 
 const LiquidEther = dynamic(() => import('@/components/LiquidEther'), { ssr: false });
 
@@ -97,19 +98,7 @@ export default function LandingPage() {
 
         <PricingSection />
 
-        <section className="py-16">
-          <div className="max-w-4xl mx-auto px-4 text-center">
-            <h2 className="text-2xl font-semibold text-brand-textHeading mb-4">
-              Ready to automate support?
-            </h2>
-            <Link
-              href="/signup"
-              className="inline-flex rounded-lg bg-brand-primary hover:bg-brand-primaryHover text-white px-6 py-3 text-base font-medium transition-all hover:shadow-glow-primary"
-            >
-              Get Started
-            </Link>
-          </div>
-        </section>
+        <NewsletterSection />
       </main>
 
       <footer className="py-8">
