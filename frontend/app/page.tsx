@@ -1,9 +1,12 @@
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
+
+const LiquidEther = dynamic(() => import('@/components/LiquidEther'), { ssr: false });
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-brand-bg text-brand-text">
-      <header className="border-b border-brand-border sticky top-0 z-10 glass">
+      <header className="border-b border-brand-border sticky top-0 z-20 glass">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <span className="font-semibold text-lg text-brand-textHeading">Aivora</span>
           <nav className="flex items-center gap-4">
@@ -24,20 +27,50 @@ export default function LandingPage() {
       </header>
 
       <main>
-        <section className="relative max-w-4xl mx-auto px-4 py-24 text-center animate-fade-in overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-hero-glow pointer-events-none" aria-hidden />
-          <h1 className="relative text-4xl md:text-5xl font-bold tracking-tight text-brand-textHeading mb-6">
-            Build AI Customer Support in Minutes
-          </h1>
-          <p className="relative text-xl text-brand-textMuted mb-10 max-w-2xl mx-auto">
-            Create, test, and deploy AI chatbots using your own knowledge base. No code required.
-          </p>
-          <Link
-            href="/signup"
-            className="relative inline-flex rounded-lg bg-gradient-primary text-white px-6 py-3 text-base font-medium hover:opacity-95 transition-all hover:shadow-glow-primary"
-          >
-            Get Started
-          </Link>
+        {/* Hero with LiquidEther background */}
+        <section className="relative min-h-[85vh] flex flex-col items-center justify-center overflow-hidden">
+          <div className="absolute inset-0 w-full h-full">
+            <LiquidEther
+              colors={['#5227FF', '#FF9FFC', '#B19EEF']}
+              mouseForce={20}
+              cursorSize={100}
+              isViscous
+              viscous={30}
+              iterationsViscous={32}
+              iterationsPoisson={32}
+              resolution={0.5}
+              isBounce={false}
+              autoDemo
+              autoSpeed={0.5}
+              autoIntensity={2.2}
+              takeoverDuration={0.25}
+              autoResumeDelay={3000}
+              autoRampDuration={0.6}
+              className="absolute inset-0 w-full h-full"
+            />
+          </div>
+          <div className="relative z-10 max-w-4xl mx-auto px-4 py-16 text-center pointer-events-auto">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-brand-textHeading mb-6 animate-fade-in drop-shadow-lg">
+              Build AI Customer Support in Minutes
+            </h1>
+            <p className="text-lg sm:text-xl text-brand-textMuted mb-10 max-w-2xl mx-auto animate-fade-in [animation-delay:0.1s] opacity-95">
+              Create, test, and deploy AI chatbots using your own knowledge base. No code required.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in [animation-delay:0.2s]">
+              <Link
+                href="/signup"
+                className="inline-flex items-center justify-center rounded-xl bg-gradient-primary text-white px-8 py-4 text-base font-semibold hover:opacity-95 transition-all hover:shadow-glow-primary shadow-lg"
+              >
+                Get Started
+              </Link>
+              <Link
+                href="/login"
+                className="inline-flex items-center justify-center rounded-xl border border-brand-border bg-brand-bgCard/80 backdrop-blur-sm text-brand-textHeading px-8 py-4 text-base font-medium hover:bg-brand-bgCardHover transition-colors"
+              >
+                Log in
+              </Link>
+            </div>
+          </div>
         </section>
 
         <section className="border-t border-brand-border py-24">
