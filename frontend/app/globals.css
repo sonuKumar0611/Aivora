@@ -176,3 +176,82 @@ body {
     box-shadow: 0 0 12px rgba(99, 102, 241, 0.6), 0 0 24px rgba(34, 211, 238, 0.25);
   }
 }
+
+/* Auth page animations */
+@keyframes auth-card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes auth-shine {
+  from {
+    transform: translateX(-100%) skewX(-15deg);
+  }
+  to {
+    transform: translateX(200%) skewX(-15deg);
+  }
+}
+
+@keyframes auth-float {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(6px, -6px);
+  }
+}
+
+@keyframes auth-glow-pulse {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-auth-card {
+  animation: auth-card-enter 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-auth-field {
+  opacity: 0;
+  animation: auth-card-enter 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-auth-field-delay-1 { animation-delay: 0.08s; }
+.animate-auth-field-delay-2 { animation-delay: 0.16s; }
+.animate-auth-field-delay-3 { animation-delay: 0.24s; }
+.animate-auth-field-delay-4 { animation-delay: 0.32s; }
+.animate-auth-field-delay-5 { animation-delay: 0.4s; }
+.animate-auth-field-delay-6 { animation-delay: 0.48s; }
+
+/* Toast notifications – attractive and informative */
+.aivora-toast {
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  font-weight: 500;
+  animation: toast-slide-in 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.aivora-toast-success {
+  border-left: 3px solid #22C55E !important;
+}
+.aivora-toast-error {
+  border-left: 3px solid #EF4444 !important;
+}
+@keyframes toast-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
