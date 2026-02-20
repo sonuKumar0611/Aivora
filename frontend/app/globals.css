@@ -64,6 +64,18 @@ body {
   background: hsl(var(--background));
 }
 
+/* Hide scrollbar globally – page still scrolls with wheel/touch/trackpad */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 /* Glass panel (modals, overlays) */
 @layer utilities {
   .glass {
