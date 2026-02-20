@@ -256,3 +256,23 @@ body {
     transform: translateX(0);
   }
 }
+
+/* Sidebar Spline 3D robot (bottom, above logout) – centered, full robot visible */
+.sidebar-spline-robot,
+.sidebar-spline-robot-collapsed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sidebar-spline-robot canvas {
+  width: 140px !important;
+  height: 90px !important;
+  object-fit: contain;
+  object-position: center;
+}
+.sidebar-spline-robot-collapsed canvas {
+  width: 56px !important;
+  height: 56px !important;
+  object-fit: contain;
+  object-position: center;
+}

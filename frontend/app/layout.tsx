@@ -10,14 +10,14 @@ export const metadata: Metadata = {
   title: 'Aivora – AI Customer Support',
   description: 'Build AI Customer Support in Minutes',
   icons: {
-    icon: '/aivora.png',
-    shortcut: '/aivora.png',
-    apple: '/aivora.png',
+    icon: '/brand-logo.png',
+    shortcut: '/brand-logo.png',
+    apple: '/brand-logo.png',
   },
   openGraph: {
     title: 'Aivora – AI Customer Support',
     description: 'Build AI Customer Support in Minutes',
-    images: ['/aivora.png'],
+    images: ['/brand-logo.png'],
   },
 };
 

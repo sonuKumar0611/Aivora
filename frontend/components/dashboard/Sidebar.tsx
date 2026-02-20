@@ -5,6 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
+import Spline from '@splinetool/react-spline';
+import ShinyText from '@/components/ui/ShinyText';
 import {
   LayoutDashboard,
   Bot,
@@ -70,25 +72,48 @@ export function Sidebar() {
       />
 
       <div className="relative flex flex-col h-full min-h-0 overflow-hidden">
-        {/* Logo */}
-        <div className={clsx('flex items-center border-b border-brand-border/80', collapsed ? 'min-h-[80px] px-2 py-4 justify-center' : 'min-h-[96px] px-4 py-4')}>
+        {/* Brand name with shine */}
+        <div className={clsx('flex items-center border-b border-brand-border/80', collapsed ? 'min-h-[52px] px-2 py-2 justify-center' : 'min-h-[56px] px-4 py-2.5')}>
           <Link
             href="/dashboard"
             className={clsx(
-              'flex items-center overflow-hidden rounded-lg transition-opacity hover:opacity-90',
-              collapsed ? 'h-14 w-14 shrink-0 justify-center' : 'min-w-0 flex-1'
+              'flex items-center justify-center overflow-hidden rounded-lg transition-opacity hover:opacity-90',
+              collapsed ? 'h-10 w-10 shrink-0' : 'min-w-0 flex-1 gap-2'
             )}
             title="Aivora"
           >
-            <span className={clsx('relative shrink-0 overflow-hidden rounded-lg bg-white/5 flex items-center justify-center', collapsed ? 'h-14 w-14' : 'h-[4.5rem] w-[4.5rem]')}>
+            {collapsed ? (
               <Image
-                src="/aivora.png"
+                src="/brand-logo.png"
                 alt="Aivora"
-                width={80}
-                height={80}
-                className="h-full w-full object-contain p-1"
+                width={40}
+                height={40}
+                className="h-10 w-10 object-contain"
               />
-            </span>
+            ) : (
+              <>
+                <Image
+                  src="/brand-logo.png"
+                  alt=""
+                  width={28}
+                  height={28}
+                  className="h-7 w-7 shrink-0 object-contain"
+                  aria-hidden
+                />
+                <ShinyText
+                  text="Aivora™"
+                  speed={2}
+                  delay={0}
+                  color="hsl(var(--text-muted))"
+                  shineColor="hsl(var(--primary))"
+                  spread={120}
+                  direction="left"
+                  yoyo={false}
+                  pauseOnHover={false}
+                  className="font-semibold tracking-tight text-2xl"
+                />
+              </>
+            )}
           </Link>
         </div>
 
@@ -122,6 +147,18 @@ export function Sidebar() {
           })}
         </nav>
 
+        {/* Robot – just above logout */}
+        <div className={clsx('flex-shrink-0 flex items-center justify-center py-3', collapsed ? 'px-2' : 'px-3')}>
+          <span
+            className={clsx(
+              'relative rounded-lg bg-white/5 flex items-center justify-center overflow-hidden',
+              collapsed ? 'sidebar-spline-robot-collapsed h-14 w-14' : 'sidebar-spline-robot h-[90px] w-[140px]'
+            )}
+          >
+            <Spline scene="https://prod.spline.design/12szciltoAEi7SfN/scene.splinecode" />
+          </span>
+        </div>
+
         {/* Log out at bottom */}
         <div className="relative p-2 border-t border-brand-border/80">
           <button
@@ -151,7 +188,7 @@ export function Sidebar() {
           type="button"
           onClick={() => setCollapsed((c) => !c)}
           className={clsx(
-            'absolute -right-0 top-[6.5rem] h-8 w-8 -translate-y-1/2 translate-x-0 rounded-full',
+            'absolute -right-0 top-[3.4rem] h-8 w-8 -translate-y-1/2 translate-x-0 rounded-full',
             'flex items-center justify-center shrink-0',
             'border border-brand-border bg-brand-bgCard text-brand-textMuted shadow-md',
             'transition-opacity duration-200 hover:bg-brand-divider hover:text-brand-textHeading hover:border-brand-borderLight',
