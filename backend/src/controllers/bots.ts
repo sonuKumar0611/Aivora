@@ -1,0 +1,143 @@
+import { Response, NextFunction } from 'express';
+import { z } from 'zod';
+import { Bot } from '../models/Bot';
+import { AuthRequest } from '../middleware/auth';
+import { ApiError } from '../middleware/errorHandler';
+
+const createBotSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(100),
+  description: z.string().min(1, 'Description is required').max(2000),
+  tone: z.string().min(1).max(50).default('professional'),
+});
+
+const updateBotSchema = createBotSchema.partial();
+
+export async function listBots(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const userId = req.user!.id;
+    const bots = await Bot.find({ userId }).sort({ updatedAt: -1 }).lean();
+    res.json({
+      data: { bots: bots.map((b) => ({ ...b, id: b._id.toString() })) },
+      message: 'OK',
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function createBot(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const userId = req.user!.id;
+    const body = createBotSchema.parse(req.body);
+    const bot = await Bot.create({
+      userId,
+      name: body.name,
+      description: body.description,
+      tone: body.tone,
+    });
+    res.status(201).json({
+      data: {
+        bot: {
+          id: bot._id.toString(),
+          name: bot.name,
+          description: bot.description,
+          tone: bot.tone,
+          createdAt: bot.createdAt,
+          updatedAt: bot.updatedAt,
+        },
+      },
+      message: 'Bot created',
+    });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: 'Validation error', message: err.errors[0].message });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function getBot(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const userId = req.user!.id;
+    const { id } = req.params;
+    const bot = await Bot.findOne({ _id: id, userId }).lean();
+    if (!bot) {
+      res.status(404).json({ error: 'Not found', message: 'Bot not found' });
+      return;
+    }
+    res.json({
+      data: {
+        bot: {
+          id: bot._id.toString(),
+          name: bot.name,
+          description: bot.description,
+          tone: bot.tone,
+          createdAt: bot.createdAt,
+          updatedAt: bot.updatedAt,
+        },
+      },
+      message: 'OK',
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function updateBot(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const userId = req.user!.id;
+    const { id } = req.params;
+    const body = updateBotSchema.parse(req.body);
+    const bot = await Bot.findOneAndUpdate(
+      { _id: id, userId },
+      { $set: body },
+      { new: true }
+    ).lean();
+    if (!bot) {
+      res.status(404).json({ error: 'Not found', message: 'Bot not found' });
+      return;
+    }
+    res.json({
+      data: {
+        bot: {
+          id: bot._id.toString(),
+          name: bot.name,
+          description: bot.description,
+          tone: bot.tone,
+          createdAt: bot.createdAt,
+          updatedAt: bot.updatedAt,
+        },
+      },
+      message: 'Bot updated',
+    });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: 'Validation error', message: err.errors[0].message });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function deleteBot(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const userId = req.user!.id;
+    const { id } = req.params;
+    const bot = await Bot.findOneAndDelete({ _id: id, userId });
+    if (!bot) {
+      res.status(404).json({ error: 'Not found', message: 'Bot not found' });
+      return;
+    }
+    // Cascade: delete knowledge chunks and chats for this bot (Phase 2/3 will use these)
+    const { KnowledgeChunk } = await import('../models/KnowledgeChunk');
+    const { Chat } = await import('../models/Chat');
+    await Promise.all([
+      KnowledgeChunk.deleteMany({ botId: bot._id }),
+      Chat.deleteMany({ botId: bot._id }),
+    ]);
+    res.json({ data: null, message: 'Bot deleted' });
+  } catch (err) {
+    next(err);
+  }
+}
