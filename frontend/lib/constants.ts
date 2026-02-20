@@ -6,7 +6,7 @@ export const TONE_OPTIONS = [
   { value: 'casual', label: 'Casual' },
 ] as const;
 
-export const BOT_TYPE_OPTIONS = [
+export const AGENT_TYPE_OPTIONS = [
   { value: 'support', label: 'Support' },
   { value: 'sales', label: 'Sales' },
   { value: 'faq', label: 'FAQ' },

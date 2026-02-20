@@ -7,7 +7,7 @@ const LiquidEther = dynamic(() => import('@/components/LiquidEther'), { ssr: fal
 
 const LANDING_ETHER_COLORS = ['#5227FF', '#FF9FFC', '#B19EEF'];
 
-interface BotCardProps {
+interface AgentCardProps {
   href: string;
   name: string;
   tone: string;
@@ -15,7 +15,7 @@ interface BotCardProps {
   status?: 'draft' | 'published';
 }
 
-export function BotCard({ href, name, tone, description, status = 'draft' }: BotCardProps) {
+export function AgentCard({ href, name, tone, description, status = 'draft' }: AgentCardProps) {
   return (
     <Link
       href={href}

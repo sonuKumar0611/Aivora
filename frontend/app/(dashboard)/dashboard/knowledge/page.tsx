@@ -37,7 +37,7 @@ function sourceColumns(): { id: string; label: string; render: (row: KnowledgeSo
     },
     {
       id: 'assignedBots',
-      label: 'Assigned to bots',
+      label: 'Assigned to agents',
       render: (row) =>
         row.assignedBots.length === 0 ? (
           <span className="text-brand-textMuted italic">Unassigned</span>
@@ -73,7 +73,7 @@ export default function KnowledgePage() {
   const handleDelete = (row: KnowledgeSource) => {
     if (row.assignedBots.length > 0) {
       const names = row.assignedBots.map((b) => b.name).join(', ');
-      toast.error(`Remove this document from bot config first: ${names}`);
+      toast.error(`Remove this document from agent config first: ${names}`);
       return;
     }
     setDeleteConfirmRow(row);
@@ -182,7 +182,7 @@ export default function KnowledgePage() {
       <div className="shrink-0">
         <h1 className="text-2xl font-semibold text-brand-textHeading">Knowledge Base</h1>
         <p className="mt-1 text-sm text-brand-textMuted">
-          Upload documents here. Assign them to bots when creating or editing a bot.
+          Upload documents here. Assign them to agents when creating or editing an agent.
         </p>
       </div>
 
@@ -197,7 +197,7 @@ export default function KnowledgePage() {
           <DataTable<KnowledgeSource>
           fillHeight
           title="Documents"
-          description="Assign documents to bots in My Bots → Create/Edit bot."
+          description="Assign documents to agents in My Agents → Create/Edit agent."
           searchPlaceholder="Search documents..."
           columns={sourceColumns()}
           data={sources}
@@ -210,7 +210,7 @@ export default function KnowledgePage() {
             <EmptyState
               icon={<BookOpen className="w-10 h-10 mx-auto" />}
               title="No documents yet"
-              description="Click Add to upload a PDF, paste text, or add a URL. Then assign documents to bots when creating a bot."
+              description="Click Add to upload a PDF, paste text, or add a URL. Then assign documents to agents when creating an agent."
               action={{ label: 'Add document', onClick: () => setAddOpen(true) }}
             />
           }

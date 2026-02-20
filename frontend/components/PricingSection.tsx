@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 
 const freeFeatures = [
-  '1 AI bot',
+  '1 AI agent',
   '500 messages / month',
   'Knowledge base (PDF, text, URLs)',
   'Embeddable chat widget',
@@ -22,7 +22,7 @@ const freeFeatures = [
 ];
 
 const proFeatures = [
-  'Unlimited bots',
+  'Unlimited agents',
   '10,000+ messages / month',
   'Everything in Free, plus:',
   'Priority support',
@@ -90,7 +90,7 @@ export function PricingSection() {
               <span className="text-brand-textMuted text-sm ml-1">/ month</span>
             </div>
             <p className="text-sm text-brand-textMuted mb-6">
-              Get started with one bot and limited messages. No credit card required.
+              Get started with one agent and limited messages. No credit card required.
             </p>
             <ul className="space-y-3 flex-1 mb-8">
               {freeFeatures.map((f) => (

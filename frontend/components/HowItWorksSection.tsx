@@ -7,7 +7,7 @@ const steps = [
   {
     number: 1,
     icon: Bot,
-    title: 'Create a bot',
+    title: 'Create an agent',
     short: 'Set name, description, and tone for your support assistant.',
     detail:
       'Give your assistant a name and personality. Choose how formal or friendly it should be, and add your business context so every answer stays on-brand. No code—just a few fields in the dashboard.',
@@ -18,7 +18,7 @@ const steps = [
     title: 'Add knowledge',
     short: 'Upload PDFs, paste text, or add URLs. We process and index everything.',
     detail:
-      'Drop in PDFs, help docs, FAQs, or paste text directly. Add URLs and we’ll crawl and index them. Our pipeline chunks and embeds your content so the bot retrieves the right answers in real time. Re-upload anytime to keep answers fresh.',
+      'Drop in PDFs, help docs, FAQs, or paste text directly. Add URLs and we’ll crawl and index them. Our pipeline chunks and embeds your content so the agent retrieves the right answers in real time. Re-upload anytime to keep answers fresh.',
   },
   {
     number: 3,
@@ -53,7 +53,7 @@ export function HowItWorksSection() {
           How it works
         </h2>
         <p className="text-brand-textMuted text-center mb-14 max-w-xl mx-auto">
-          Three steps from signup to a live support bot—no code required.
+          Three steps from signup to a live support agent—no code required.
         </p>
 
         {/* Vertical stepper with laser line */}

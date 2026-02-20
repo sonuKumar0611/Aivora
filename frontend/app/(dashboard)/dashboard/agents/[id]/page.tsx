@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { TONE_OPTIONS, BOT_TYPE_OPTIONS } from '@/lib/constants';
+import { TONE_OPTIONS, AGENT_TYPE_OPTIONS } from '@/lib/constants';
 import toast from 'react-hot-toast';
 import { getErrorMessage } from '@/lib/api';
 import { ArrowLeft, Code, BookOpen, User, Settings, MessageSquare, BarChart3, MessageCircle } from 'lucide-react';
@@ -28,7 +28,7 @@ import {
 
 type TabId = 'profile' | 'kb' | 'chat' | 'preview' | 'settings' | 'analytics';
 
-export default function BotEditPage() {
+export default function AgentEditPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
@@ -118,7 +118,7 @@ export default function BotEditPage() {
       return;
     }
     publishBot.mutate(id, {
-      onSuccess: () => toast.success('Bot published'),
+      onSuccess: () => toast.success('Agent published'),
       onError: (err) => toast.error(getErrorMessage(err)),
     });
   };
@@ -130,9 +130,9 @@ export default function BotEditPage() {
   const confirmDelete = () => {
     deleteBot.mutate(id, {
       onSuccess: () => {
-        toast.success('Bot deleted');
+        toast.success('Agent deleted');
         setDeleteModalOpen(false);
-        router.push('/dashboard/bots');
+        router.push('/dashboard/agents');
       },
       onError: (err) => {
         toast.error(getErrorMessage(err));
@@ -143,8 +143,8 @@ export default function BotEditPage() {
   if (isError) {
     return (
       <div className="space-y-6 animate-fade-in">
-        <Link href="/dashboard/bots" className="inline-flex items-center text-sm text-brand-textMuted hover:text-brand-text">
-          <ArrowLeft className="w-4 h-4 mr-1" /> Back to bots
+        <Link href="/dashboard/agents" className="inline-flex items-center text-sm text-brand-textMuted hover:text-brand-text">
+          <ArrowLeft className="w-4 h-4 mr-1" /> Back to agents
         </Link>
         <Card>
           <CardContent className="py-12">
@@ -158,8 +158,8 @@ export default function BotEditPage() {
   if (isLoading || !bot) {
     return (
       <div className="space-y-8 animate-fade-in">
-        <Link href="/dashboard/bots" className="inline-flex items-center text-sm text-brand-textMuted hover:text-brand-text">
-          <ArrowLeft className="w-4 h-4 mr-1" /> Back to bots
+        <Link href="/dashboard/agents" className="inline-flex items-center text-sm text-brand-textMuted hover:text-brand-text">
+          <ArrowLeft className="w-4 h-4 mr-1" /> Back to agents
         </Link>
         <Skeleton className="h-8 w-48" />
         <Card>
@@ -188,8 +188,8 @@ export default function BotEditPage() {
     <div className="h-full flex flex-col space-y-6 animate-fade-in pb-10">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <Link href="/dashboard/bots" className="inline-flex items-center text-sm text-brand-textMuted hover:text-brand-text mb-2">
-            <ArrowLeft className="w-4 h-4 mr-1" /> Back to bots
+          <Link href="/dashboard/agents" className="inline-flex items-center text-sm text-brand-textMuted hover:text-brand-text mb-2">
+            <ArrowLeft className="w-4 h-4 mr-1" /> Back to agents
           </Link>
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-2xl font-semibold text-brand-textHeading">{bot.name}</h1>
@@ -242,14 +242,14 @@ export default function BotEditPage() {
       {activeTab === 'profile' && (
         <Card>
           <CardHeader className="pb-2">
-            <h2 className="font-semibold text-brand-textHeading">Bot profile</h2>
-            <p className="text-sm text-brand-textMuted mt-2">Update bot name, type, and description.</p>
+            <h2 className="font-semibold text-brand-textHeading">Agent profile</h2>
+            <p className="text-sm text-brand-textMuted mt-2">Update agent name, type, and description.</p>
           </CardHeader>
           <CardContent className="space-y-8 pt-8 pb-8">
             <form onSubmit={saveProfile} className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-brand-text">Bot name</label>
+                  <label className="block text-sm font-medium text-brand-text">Agent name</label>
                   <input
                     type="text"
                     value={name}
@@ -259,13 +259,13 @@ export default function BotEditPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-brand-text">Bot type</label>
+                  <label className="block text-sm font-medium text-brand-text">Agent type</label>
                   <select
                     value={botType}
                     onChange={(e) => setBotType(e.target.value)}
                     className="w-full rounded-lg border border-brand-borderLight bg-brand-sidebar px-3 py-2.5 text-brand-text focus:ring-2 focus:ring-brand-primary"
                   >
-                    {BOT_TYPE_OPTIONS.map((opt) => (
+                    {AGENT_TYPE_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>
                         {opt.label}
                       </option>
@@ -274,7 +274,7 @@ export default function BotEditPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-brand-text">Bot description</label>
+                <label className="block text-sm font-medium text-brand-text">Agent description</label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -354,13 +354,13 @@ export default function BotEditPage() {
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-brand-text mb-2">Bot prompt (optional)</label>
+                <label className="block text-sm font-medium text-brand-text mb-2">Agent prompt (optional)</label>
                 <textarea
                   value={systemPrompt}
                   onChange={(e) => setSystemPrompt(e.target.value)}
                   rows={4}
                   className="w-full rounded-lg border border-brand-borderLight bg-brand-sidebar px-3 py-2 text-brand-text focus:ring-2 focus:ring-brand-primary"
-                  placeholder="Custom instructions for how the bot should respond when using this knowledge base..."
+                  placeholder="Custom instructions for how the agent should respond when using this knowledge base..."
                 />
               </div>
               <div className="pt-4 border-t border-brand-borderLight">
@@ -473,7 +473,7 @@ export default function BotEditPage() {
                 </CardHeader>
                 <CardContent>
                   {topKeywords.length === 0 ? (
-                    <p className="text-sm text-brand-textMuted">No keywords yet. Chat with your bot to see trends.</p>
+                    <p className="text-sm text-brand-textMuted">No keywords yet. Chat with your agent to see trends.</p>
                   ) : (
                     <ul className="flex flex-wrap gap-2">
                       {topKeywords.map((k) => (
@@ -497,7 +497,7 @@ export default function BotEditPage() {
       {/* Tab: Test Chat */}
       {activeTab === 'chat' && (
         <div className="flex-1 flex flex-col min-h-[70vh]">
-          <TestChatPanel preselectedBotId={id} embedded />
+          <TestChatPanel preselectedAgentId={id} embedded />
         </div>
       )}
 
@@ -509,19 +509,19 @@ export default function BotEditPage() {
               <Code className="w-4 h-4" /> Embed widget
             </h2>
             <p className="text-sm text-brand-textMuted mt-2">
-              Add this script to your website. {status !== 'published' && 'Publish the bot for the script to work.'}
+              Add this script to your website. {status !== 'published' && 'Publish the agent for the script to work.'}
             </p>
           </CardHeader>
           <CardContent className="space-y-6 pt-8 pb-8">
             <pre className="rounded-lg bg-brand-border p-4 text-xs overflow-x-auto text-brand-text">
-              {`<script src="${origin || ''}/widget.js" data-bot="${id}" data-api="${process.env.NEXT_PUBLIC_API_URL || ''}"></script>`}
+              {`<script src="${origin || ''}/widget.js" data-agent="${id}" data-api="${process.env.NEXT_PUBLIC_API_URL || ''}"></script>`}
             </pre>
             <Button
               variant="secondary"
               size="sm"
               onClick={() => {
                 const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-                const snippet = `<script src="${origin || ''}/widget.js" data-bot="${id}" data-api="${apiUrl}"></script>`;
+                const snippet = `<script src="${origin || ''}/widget.js" data-agent="${id}" data-api="${apiUrl}"></script>`;
                 navigator.clipboard.writeText(snippet);
                 toast.success('Copied to clipboard');
               }}
@@ -534,7 +534,7 @@ export default function BotEditPage() {
                   onClick={handlePublish}
                   disabled={publishBot.isPending || selectedSourceIds.length === 0}
                 >
-                  {publishBot.isPending ? 'Publishing…' : 'Publish bot'}
+                  {publishBot.isPending ? 'Publishing…' : 'Publish agent'}
                 </Button>
               </div>
             )}
@@ -547,14 +547,14 @@ export default function BotEditPage() {
         <Card className="border-red-200 dark:border-red-900/50">
           <CardHeader className="pb-2">
             <h2 className="font-semibold text-red-600 dark:text-red-400">Danger zone</h2>
-            <p className="text-sm text-brand-textMuted mt-2">Irreversible actions for this bot.</p>
+            <p className="text-sm text-brand-textMuted mt-2">Irreversible actions for this agent.</p>
           </CardHeader>
           <CardContent className="pt-6 pb-8">
             <p className="text-sm text-brand-textMuted mb-4">
-              Deleting this bot will remove its chat history. This cannot be undone.
+              Deleting this agent will remove its chat history. This cannot be undone.
             </p>
             <Button variant="danger" onClick={handleDelete} disabled={deleteBot.isPending}>
-              {deleteBot.isPending ? 'Deleting…' : 'Delete bot'}
+              {deleteBot.isPending ? 'Deleting…' : 'Delete agent'}
             </Button>
           </CardContent>
         </Card>
@@ -564,9 +564,9 @@ export default function BotEditPage() {
         open={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
         onConfirm={confirmDelete}
-        title="Delete bot?"
-        description="This will remove this bot and its chat history. This cannot be undone."
-        confirmLabel="Delete bot"
+        title="Delete agent?"
+        description="This will remove this agent and its chat history. This cannot be undone."
+        confirmLabel="Delete agent"
         cancelLabel="Cancel"
         variant="danger"
         isLoading={deleteBot.isPending}

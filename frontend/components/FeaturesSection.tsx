@@ -6,8 +6,8 @@ import { Bot, BookOpen, Code2 } from 'lucide-react';
 const features = [
   {
     icon: Bot,
-    title: 'Bot Builder',
-    description: 'Create bots with custom names, business descriptions, and tone. Full control over personality.',
+    title: 'Agent Builder',
+    description: 'Create agents with custom names, business descriptions, and tone. Full control over personality.',
     details: [
       'Custom name & avatar',
       'Business context & tone',
@@ -17,7 +17,7 @@ const features = [
   {
     icon: BookOpen,
     title: 'Knowledge Base',
-    description: 'Upload PDFs, text, or URLs. We chunk, embed, and index so your bot answers from your content.',
+    description: 'Upload PDFs, text, or URLs. We chunk, embed, and index so your agent answers from your content.',
     details: [
       'PDF, text & URL support',
       'Smart chunking & embeddings',

@@ -16,9 +16,11 @@ interface Message {
 }
 
 interface TestChatPanelProps {
-  /** When set, this bot is pre-selected and the bot selector is hidden (e.g. when embedded in bot detail page). */
+  /** When set, this agent is pre-selected and the agent selector is hidden (e.g. when embedded in agent detail page). */
   preselectedBotId?: string;
-  /** When true, hide the header (title + bot selector). Useful when embedded as a tab. */
+  /** Alias for preselectedBotId. When set, this agent is pre-selected. */
+  preselectedAgentId?: string;
+  /** When true, hide the header (title + agent selector). Useful when embedded as a tab. */
   embedded?: boolean;
 }
 
@@ -43,20 +45,21 @@ function TypingIndicator() {
   );
 }
 
-export function TestChatPanel({ preselectedBotId, embedded = false }: TestChatPanelProps) {
+export function TestChatPanel({ preselectedBotId, preselectedAgentId, embedded = false }: TestChatPanelProps) {
+  const preselectedId = preselectedAgentId ?? preselectedBotId;
   const { bots } = useBots();
-  const [selectedBotId, setSelectedBotId] = useState(preselectedBotId ?? '');
+  const [selectedBotId, setSelectedBotId] = useState(preselectedId ?? '');
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [conversationId, setConversationId] = useState<string | null>(null);
   const sendMessage = useSendMessage();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const effectiveBotId = preselectedBotId ?? selectedBotId;
+  const effectiveBotId = preselectedId ?? selectedBotId;
 
   useEffect(() => {
-    if (preselectedBotId) setSelectedBotId(preselectedBotId);
-  }, [preselectedBotId]);
+    if (preselectedId) setSelectedBotId(preselectedId);
+  }, [preselectedId]);
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   useEffect(() => {
@@ -66,7 +69,7 @@ export function TestChatPanel({ preselectedBotId, embedded = false }: TestChatPa
   const handleSend = async () => {
     const text = input.trim();
     if (!text || !effectiveBotId) {
-      if (!effectiveBotId) toast.error('Select a bot first');
+      if (!effectiveBotId) toast.error('Select an agent first');
       return;
     }
     setInput('');
@@ -106,11 +109,11 @@ export function TestChatPanel({ preselectedBotId, embedded = false }: TestChatPa
           <div>
             <h1 className="text-2xl font-semibold text-brand-textHeading">Test Chat</h1>
             <p className="mt-1 text-sm text-brand-textMuted">
-              Try your bot with RAG from your knowledge base
+              Try your agent with RAG from your knowledge base
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-brand-text">Bot</label>
+            <label className="text-sm font-medium text-brand-text">Agent</label>
             <select
               value={selectedBotId}
               onChange={(e) => {
@@ -120,7 +123,7 @@ export function TestChatPanel({ preselectedBotId, embedded = false }: TestChatPa
               }}
               className="rounded-lg border border-brand-borderLight bg-brand-sidebar px-3 py-2 text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-brand-primary min-w-[180px]"
             >
-              <option value="">Select a bot</option>
+              <option value="">Select an agent</option>
               {bots.map((b) => (
                 <option key={b.id} value={b.id}>{b.name}</option>
               ))}
@@ -136,7 +139,7 @@ export function TestChatPanel({ preselectedBotId, embedded = false }: TestChatPa
         <Card className="flex-1 flex items-center justify-center min-h-0">
           <CardContent className="py-16 text-center">
             <MessageSquare className="w-12 h-12 mx-auto text-brand-textMuted mb-4" />
-            <p className="text-brand-textMuted">Select a bot to start testing.</p>
+            <p className="text-brand-textMuted">Select an agent to start testing.</p>
           </CardContent>
         </Card>
       ) : (
@@ -154,7 +157,7 @@ export function TestChatPanel({ preselectedBotId, embedded = false }: TestChatPa
                   </div>
                   <h3 className="text-base font-medium text-brand-textHeading mb-1">Start a conversation</h3>
                   <p className="text-sm text-brand-textMuted max-w-sm mb-6">
-                    Send a message to test your bot. It will use your knowledge base when available.
+                    Send a message to test your agent. It will use your knowledge base when available.
                   </p>
                   <div className="flex flex-wrap justify-center gap-2">
                     {SUGGESTIONS.map((s) => (

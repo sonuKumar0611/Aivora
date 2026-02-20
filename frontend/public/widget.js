@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   var script = document.currentScript;
-  var botId = script && script.getAttribute('data-bot');
+  var botId = script && (script.getAttribute('data-agent') || script.getAttribute('data-bot'));
   var apiBase = (script && script.getAttribute('data-api')) || '';
   if (!botId || !apiBase) return;
 

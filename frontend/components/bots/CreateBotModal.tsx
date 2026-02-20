@@ -45,7 +45,7 @@ export function CreateBotModal({ open, onClose, onSubmit, isLoading }: CreateBot
         onClick={(e) => e.stopPropagation()}
       >
         <CardHeader className="flex flex-row items-center justify-between shrink-0">
-          <h2 className="text-lg font-semibold">Create bot</h2>
+          <h2 className="text-lg font-semibold">Create agent</h2>
           <button
             type="button"
             onClick={onClose}
@@ -97,7 +97,7 @@ export function CreateBotModal({ open, onClose, onSubmit, isLoading }: CreateBot
               <label className="block text-sm font-medium text-brand-text mb-1">
                 Knowledge base <span className="text-brand-error">*</span>
               </label>
-              <p className="text-xs text-brand-textMuted mb-2">Select at least one document this bot will use.</p>
+              <p className="text-xs text-brand-textMuted mb-2">Select at least one document this agent will use.</p>
               {sourcesLoading ? (
                 <p className="text-sm text-brand-textMuted">Loading…</p>
               ) : sources.length === 0 ? (

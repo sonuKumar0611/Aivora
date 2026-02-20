@@ -19,7 +19,7 @@ export default function DashboardPage() {
       <div>
         <h1 className="text-2xl font-semibold text-brand-textHeading">Dashboard</h1>
         <p className="mt-1 text-sm text-brand-textMuted">
-          Overview of your AI support bots
+          Overview of your AI support agents
         </p>
       </div>
 
@@ -43,7 +43,7 @@ export default function DashboardPage() {
 
       <Card className="transition-shadow hover:shadow-md">
         <CardHeader>
-          <h2 className="font-semibold text-brand-textHeading">Recent bots</h2>
+          <h2 className="font-semibold text-brand-textHeading">Recent agents</h2>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -53,16 +53,16 @@ export default function DashboardPage() {
           ) : bots.length === 0 ? (
             <EmptyState
               icon={<Bot className="w-12 h-12" />}
-              title="No bots yet"
-              description="Create your first bot to get started with AI customer support."
-              action={{ label: 'Create your first bot', onClick: () => router.push('/dashboard/bots') }}
+              title="No agents yet"
+              description="Create your first agent to get started with AI customer support."
+              action={{ label: 'Create your first agent', onClick: () => router.push('/dashboard/agents') }}
             />
           ) : (
             <ul className="space-y-2">
               {bots.slice(0, 5).map((bot) => (
                 <li key={bot.id}>
                   <Link
-                    href={`/dashboard/bots/${bot.id}`}
+                    href={`/dashboard/agents/${bot.id}`}
                     className="block rounded-xl border border-brand-border p-4 hover:bg-brand-bgCardHover hover:border-brand-borderLight transition-all duration-200 animate-in"
                   >
                     <span className="font-medium text-brand-textHeading">{bot.name}</span>

@@ -9,9 +9,9 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Bot, Plus, Search } from 'lucide-react';
-import { BotCard } from '@/components/bots/BotCard';
+import { AgentCard } from '@/components/agents/AgentCard';
 
-export default function BotsPage() {
+export default function AgentsPage() {
   const { bots, isLoading, isError, refetch } = useBots();
   const [search, setSearch] = useState('');
 
@@ -30,15 +30,15 @@ export default function BotsPage() {
     <div className="h-full flex flex-col animate-fade-in">
       <div className="flex items-center justify-between shrink-0">
         <div>
-          <h1 className="text-2xl font-semibold text-brand-textHeading">My Bots</h1>
+          <h1 className="text-2xl font-semibold text-brand-textHeading">My Agents</h1>
           <p className="mt-1 text-sm text-brand-textMuted">
-            Create and manage your support bots
+            Create and manage your support agents
           </p>
         </div>
-        <Link href="/dashboard/bots/new">
+        <Link href="/dashboard/agents/new">
           <Button className="transition-all hover:scale-[1.02]">
             <Plus className="w-4 h-4 mr-2 inline" />
-            New bot
+            New agent
           </Button>
         </Link>
       </div>
@@ -70,9 +70,9 @@ export default function BotsPage() {
             <CardContent className="w-full flex items-center justify-center py-16">
               <EmptyState
                 icon={<Bot className="w-12 h-12" />}
-                title="No bots yet"
-                description="Create a bot to get started. Set its name, business description, and tone."
-                action={{ label: 'Create bot', onClick: () => window.location.assign('/dashboard/bots/new') }}
+                title="No agents yet"
+                description="Create an agent to get started. Set its name, business description, and tone."
+                action={{ label: 'Create agent', onClick: () => window.location.assign('/dashboard/agents/new') }}
               />
             </CardContent>
           </Card>
@@ -84,21 +84,21 @@ export default function BotsPage() {
                 type="search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search bots..."
+                placeholder="Search agents..."
                 className="w-full pl-9 pr-3 py-2 rounded-lg border border-brand-borderLight bg-brand-sidebar text-brand-text text-sm placeholder-brand-textDisabled focus:ring-2 focus:ring-brand-primary focus:border-transparent"
               />
             </div>
             <div className="flex-1 min-h-0 overflow-auto">
               {filteredBots.length === 0 ? (
                 <div className="flex items-center justify-center py-16">
-                  <p className="text-brand-textMuted text-sm">No bots match your search.</p>
+                  <p className="text-brand-textMuted text-sm">No agents match your search.</p>
                 </div>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 pb-2">
                   {filteredBots.map((bot) => (
-                    <BotCard
+                    <AgentCard
                       key={bot.id}
-                      href={`/dashboard/bots/${bot.id}`}
+                      href={`/dashboard/agents/${bot.id}`}
                       name={bot.name}
                       tone={bot.tone}
                       description={bot.description ?? ''}

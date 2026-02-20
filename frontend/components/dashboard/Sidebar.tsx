@@ -22,7 +22,7 @@ const STORAGE_KEY = 'aivora-sidebar-collapsed';
 
 const nav = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/dashboard/bots', label: 'My Bots', icon: Bot },
+  { href: '/dashboard/agents', label: 'My Agents', icon: Bot },
   { href: '/dashboard/knowledge', label: 'Knowledge Base', icon: BookOpen },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];

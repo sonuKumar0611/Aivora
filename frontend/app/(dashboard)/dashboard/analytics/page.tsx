@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 export default function AnalyticsRedirectPage() {
   const router = useRouter();
   useEffect(() => {
-    router.replace('/dashboard/bots');
+    router.replace('/dashboard/agents');
   }, [router]);
   return null;
 }

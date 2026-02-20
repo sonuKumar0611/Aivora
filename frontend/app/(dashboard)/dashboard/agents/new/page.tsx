@@ -7,18 +7,18 @@ import { useBots, useBot } from '@/hooks/useBots';
 import { useKnowledge } from '@/hooks/useKnowledge';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { TONE_OPTIONS, BOT_TYPE_OPTIONS } from '@/lib/constants';
+import { TONE_OPTIONS, AGENT_TYPE_OPTIONS } from '@/lib/constants';
 import toast from 'react-hot-toast';
 import { getErrorMessage } from '@/lib/api';
 import { ArrowLeft, Check, Code, BookOpen, User } from 'lucide-react';
 
 const STEPS = [
-  { id: 1, label: 'Bot profile', icon: User },
+  { id: 1, label: 'Agent profile', icon: User },
   { id: 2, label: 'KB configuration', icon: BookOpen },
   { id: 3, label: 'Preview & publish', icon: Code },
 ];
 
-export default function CreateBotPage() {
+export default function CreateAgentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [step, setStep] = useState(() => {
@@ -53,13 +53,13 @@ export default function CreateBotPage() {
   useEffect(() => {
     if (step > 1 && !botId) {
       setStep(1);
-      router.replace('/dashboard/bots/new', { scroll: false });
+      router.replace('/dashboard/agents/new', { scroll: false });
     }
   }, [step, botId, router]);
 
   const saveDraftProfile = () => {
     if (!name.trim() || !description.trim()) {
-      toast.error('Bot name and Bot description are required');
+      toast.error('Agent name and description are required');
       return;
     }
     createBot.mutate(
@@ -75,7 +75,7 @@ export default function CreateBotPage() {
         onSuccess: (bot) => {
           setBotId(bot.id);
           setStep(2);
-          router.replace(`/dashboard/bots/new?botId=${bot.id}&step=2`, { scroll: false });
+          router.replace(`/dashboard/agents/new?botId=${bot.id}&step=2`, { scroll: false });
           toast.success('Draft saved');
         },
         onError: (err) => toast.error(getErrorMessage(err)),
@@ -98,7 +98,7 @@ export default function CreateBotPage() {
       {
         onSuccess: () => {
           setStep(3);
-          router.replace(`/dashboard/bots/new?botId=${botId}&step=3`, { scroll: false });
+          router.replace(`/dashboard/agents/new?botId=${botId}&step=3`, { scroll: false });
           toast.success('Knowledge base updated');
         },
         onError: (err) => toast.error(getErrorMessage(err)),
@@ -114,15 +114,15 @@ export default function CreateBotPage() {
     }
     publishBot.mutate(botId, {
       onSuccess: () => {
-        toast.success('Bot published');
-        router.push(`/dashboard/bots/${botId}`);
+        toast.success('Agent published');
+        router.push(`/dashboard/agents/${botId}`);
       },
       onError: (err) => toast.error(getErrorMessage(err)),
     });
   };
 
   const goBack = () => {
-    if (step === 1) router.push('/dashboard/bots');
+    if (step === 1) router.push('/dashboard/agents');
     else setStep(step - 1);
   };
 
@@ -133,12 +133,12 @@ export default function CreateBotPage() {
     <div className="h-full flex flex-col animate-fade-in pb-10 space-y-8">
       <div>
         <Link
-          href="/dashboard/bots"
+          href="/dashboard/agents"
           className="inline-flex items-center text-sm text-brand-textMuted hover:text-brand-text mb-4"
         >
-          <ArrowLeft className="w-4 h-4 mr-1" /> Back to bots
+          <ArrowLeft className="w-4 h-4 mr-1" /> Back to agents
         </Link>
-        <h1 className="text-2xl font-semibold text-brand-textHeading">Create bot</h1>
+        <h1 className="text-2xl font-semibold text-brand-textHeading">Create agent</h1>
         <p className="mt-2 text-sm text-brand-textMuted">
           Complete the steps below. You can save as draft and publish when ready.
         </p>
@@ -181,29 +181,29 @@ export default function CreateBotPage() {
           <CardHeader className="pb-2">
             <h2 className="font-semibold text-brand-textHeading">Bot profile</h2>
             <p className="text-sm text-brand-textMuted mt-2">
-              Name, type, prompt, and general info for your bot.
+              Name, type, prompt, and general info for your agent.
             </p>
           </CardHeader>
           <CardContent className="space-y-8 pt-8 pb-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-brand-text">Bot name</label>
+                <label className="block text-sm font-medium text-brand-text">Agent name</label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full rounded-lg border border-brand-borderLight bg-brand-sidebar px-3 py-2.5 text-brand-text focus:ring-2 focus:ring-brand-primary"
-                  placeholder="Support Bot"
+                  placeholder="Support Agent"
                 />
               </div>
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-brand-text">Bot type</label>
+                <label className="block text-sm font-medium text-brand-text">Agent type</label>
                 <select
                   value={botType}
                   onChange={(e) => setBotType(e.target.value)}
                   className="w-full rounded-lg border border-brand-borderLight bg-brand-sidebar px-3 py-2.5 text-brand-text focus:ring-2 focus:ring-brand-primary"
                 >
-                  {BOT_TYPE_OPTIONS.map((opt) => (
+                  {AGENT_TYPE_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
                     </option>
@@ -212,7 +212,7 @@ export default function CreateBotPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-brand-text">Bot description</label>
+              <label className="block text-sm font-medium text-brand-text">Agent description</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -256,7 +256,7 @@ export default function CreateBotPage() {
           <CardHeader className="pb-2">
             <h2 className="font-semibold text-brand-textHeading">KB configuration</h2>
             <p className="text-sm text-brand-textMuted mt-2">
-              Select at least one knowledge base (required). Optionally add custom prompts for this bot.
+              Select at least one knowledge base (required). Optionally add custom prompts for this agent.
             </p>
           </CardHeader>
           <CardContent className="space-y-6 pt-8 pb-8">
@@ -309,7 +309,7 @@ export default function CreateBotPage() {
               )}
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-brand-text">Bot prompt (optional)</label>
+              <label className="block text-sm font-medium text-brand-text">Agent prompt (optional)</label>
               <textarea
                 value={systemPrompt}
                 onChange={(e) => setSystemPrompt(e.target.value)}
@@ -346,14 +346,14 @@ export default function CreateBotPage() {
           </CardHeader>
           <CardContent className="space-y-6 pt-8 pb-8">
             <pre className="rounded-lg bg-brand-border p-4 text-xs overflow-x-auto text-brand-text">
-              {`<script src="${origin || ''}/widget.js" data-bot="${botId}" data-api="${process.env.NEXT_PUBLIC_API_URL || ''}"></script>`}
+              {`<script src="${origin || ''}/widget.js" data-agent="${botId}" data-api="${process.env.NEXT_PUBLIC_API_URL || ''}"></script>`}
             </pre>
             <Button
               variant="secondary"
               size="sm"
               onClick={() => {
                 const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-                const snippet = `<script src="${origin || ''}/widget.js" data-bot="${botId}" data-api="${apiUrl}"></script>`;
+                const snippet = `<script src="${origin || ''}/widget.js" data-agent="${botId}" data-api="${apiUrl}"></script>`;
                 navigator.clipboard.writeText(snippet);
                 toast.success('Copied to clipboard');
               }}
@@ -368,7 +368,7 @@ export default function CreateBotPage() {
                 onClick={handlePublish}
                 disabled={isPending || selectedSourceIds.length === 0}
               >
-                {publishBot.isPending ? 'Publishing…' : 'Publish bot'}
+                {publishBot.isPending ? 'Publishing…' : 'Publish agent'}
               </Button>
               <span className="text-sm text-brand-textMuted self-center">
                 {selectedSourceIds.length === 0
