@@ -61,7 +61,7 @@ export default function BotEditPage() {
   if (isError) {
     return (
       <div className="space-y-6 animate-fade-in">
-        <Link href="/dashboard/bots" className="inline-flex items-center text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300">
+        <Link href="/dashboard/bots" className="inline-flex items-center text-sm text-brand-textMuted hover:text-brand-text">
           <ArrowLeft className="w-4 h-4 mr-1" /> Back to bots
         </Link>
         <Card>
@@ -76,7 +76,7 @@ export default function BotEditPage() {
   if (isLoading || !bot) {
     return (
       <div className="space-y-8 max-w-2xl animate-fade-in">
-        <Link href="/dashboard/bots" className="inline-flex items-center text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300">
+        <Link href="/dashboard/bots" className="inline-flex items-center text-sm text-brand-textMuted hover:text-brand-text">
           <ArrowLeft className="w-4 h-4 mr-1" /> Back to bots
         </Link>
         <Skeleton className="h-8 w-48" />
@@ -95,51 +95,51 @@ export default function BotEditPage() {
   return (
     <div className="space-y-8 max-w-2xl animate-fade-in">
       <div>
-        <Link href="/dashboard/bots" className="inline-flex items-center text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 mb-4">
+        <Link href="/dashboard/bots" className="inline-flex items-center text-sm text-brand-textMuted hover:text-brand-text mb-4">
           <ArrowLeft className="w-4 h-4 mr-1" /> Back to bots
         </Link>
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Edit bot</h1>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{bot.name}</p>
+        <h1 className="text-2xl font-semibold text-brand-textHeading">Edit bot</h1>
+        <p className="mt-1 text-sm text-brand-textMuted">{bot.name}</p>
       </div>
 
       <Card>
         <CardHeader>
-          <h2 className="font-semibold text-zinc-900 dark:text-zinc-100">Details</h2>
+          <h2 className="font-semibold text-brand-textHeading">Details</h2>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+              <label className="block text-sm font-medium text-brand-text mb-1">
                 Name
               </label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-zinc-900 dark:text-zinc-100"
+                className="w-full rounded-lg border border-brand-borderLight bg-brand-sidebar px-3 py-2 text-brand-text focus:ring-2 focus:ring-brand-primary"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+              <label className="block text-sm font-medium text-brand-text mb-1">
                 Business description
               </label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={4}
-                className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-zinc-900 dark:text-zinc-100"
+                className="w-full rounded-lg border border-brand-borderLight bg-brand-sidebar px-3 py-2 text-brand-text focus:ring-2 focus:ring-brand-primary"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+              <label className="block text-sm font-medium text-brand-text mb-1">
                 Tone
               </label>
               <select
                 value={tone}
                 onChange={(e) => setTone(e.target.value)}
-                className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-zinc-900 dark:text-zinc-100"
+                className="w-full rounded-lg border border-brand-borderLight bg-brand-sidebar px-3 py-2 text-brand-text focus:ring-2 focus:ring-brand-primary"
               >
                 {TONE_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -162,15 +162,15 @@ export default function BotEditPage() {
 
       <Card>
         <CardHeader>
-          <h2 className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+          <h2 className="font-semibold text-brand-textHeading flex items-center gap-2">
             <Code className="w-4 h-4" /> Embed widget
           </h2>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+          <p className="text-sm text-brand-textMuted mt-1">
             Add this script to your website to show the chat widget. Replace the API URL with your backend URL if different.
           </p>
         </CardHeader>
         <CardContent>
-          <pre className="rounded-lg bg-zinc-100 dark:bg-zinc-800 p-4 text-xs overflow-x-auto text-zinc-900 dark:text-zinc-100">
+          <pre className="rounded-lg bg-brand-border p-4 text-xs overflow-x-auto text-brand-text">
             {`<script src="${origin || 'https://your-app.vercel.app'}/widget.js" data-bot="${id}" data-api="${process.env.NEXT_PUBLIC_API_URL || 'https://your-api.onrender.com'}"></script>`}
           </pre>
           <Button
@@ -194,7 +194,7 @@ export default function BotEditPage() {
           <h2 className="font-semibold text-red-600 dark:text-red-400">Danger zone</h2>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
+          <p className="text-sm text-brand-textMuted mb-4">
             Deleting this bot will remove all its knowledge base content and chat history. This cannot be undone.
           </p>
           <Button variant="danger" onClick={handleDelete} disabled={deleteBot.isPending}>

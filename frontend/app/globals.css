@@ -2,37 +2,57 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Aivora – Dark-first theme (default) */
 :root {
-  --background: 0 0% 100%;
-  --foreground: 240 10% 3.9%;
-  --card: 0 0% 100%;
-  --card-foreground: 240 10% 3.9%;
-  --primary: 240 5.9% 10%;
-  --primary-foreground: 0 0% 98%;
-  --secondary: 240 4.8% 95.9%;
-  --secondary-foreground: 240 5.9% 10%;
-  --muted: 240 4.8% 95.9%;
-  --muted-foreground: 240 3.8% 46.1%;
-  --accent: 240 4.8% 95.9%;
-  --accent-foreground: 240 5.9% 10%;
-  --border: 240 5.9% 90%;
+  --background: 222 36% 7%;
+  --foreground: 220 13% 91%;
+  --card: 222 47% 11%;
+  --card-foreground: 220 13% 91%;
+  --card-hover: 218 33% 14%;
+  --primary: 239 84% 67%;
+  --primary-hover: 238 76% 60%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 215 28% 17%;
+  --secondary-foreground: 220 13% 91%;
+  --muted: 215 28% 17%;
+  --muted-foreground: 220 9% 65%;
+  --accent: 187 78% 55%;
+  --accent-foreground: 222 36% 7%;
+  --border: 215 28% 17%;
+  --border-light: 218 25% 23%;
+  --divider: 218 28% 12%;
+  --sidebar: 222 47% 11%;
   --radius: 0.75rem;
+  /* Text */
+  --text-heading: 210 20% 98%;
+  --text-primary: 220 13% 91%;
+  --text-muted: 220 9% 65%;
+  --text-disabled: 220 13% 34%;
+  /* Links */
+  --link: 238 83% 75%;
+  --link-hover: 229 93% 75%;
+  /* Input */
+  --input-bg: 222 47% 11%;
+  --input-border: 218 25% 23%;
+  --input-focus: 239 84% 67%;
+  --input-placeholder: 220 9% 50%;
 }
 
-.dark {
-  --background: 240 10% 3.9%;
-  --foreground: 0 0% 98%;
-  --card: 240 10% 3.9%;
-  --card-foreground: 0 0% 98%;
-  --primary: 0 0% 98%;
-  --primary-foreground: 240 5.9% 10%;
-  --secondary: 240 3.7% 15.9%;
-  --secondary-foreground: 0 0% 98%;
-  --muted: 240 3.7% 15.9%;
-  --muted-foreground: 240 5% 64.9%;
-  --accent: 240 3.7% 15.9%;
-  --accent-foreground: 0 0% 98%;
-  --border: 240 3.7% 15.9%;
+/* Optional light theme (if toggled later) */
+.light {
+  --background: 0 0% 100%;
+  --foreground: 222 36% 7%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 36% 7%;
+  --primary: 239 84% 67%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 5% 96%;
+  --secondary-foreground: 222 36% 7%;
+  --muted: 240 5% 96%;
+  --muted-foreground: 220 9% 50%;
+  --accent: 187 78% 55%;
+  --accent-foreground: 222 36% 7%;
+  --border: 220 13% 91%;
 }
 
 body {
@@ -40,8 +60,16 @@ body {
   background: hsl(var(--background));
 }
 
-/* Premium transitions */
+/* Glass panel (modals, overlays) */
 @layer utilities {
+  .glass {
+    background: rgba(17, 24, 39, 0.6);
+    backdrop-filter: blur(10px);
+  }
+  .glass-card {
+    background: rgba(17, 24, 39, 0.8);
+    backdrop-filter: blur(12px);
+  }
   .animate-in {
     animation: animate-in 0.3s ease-out;
   }

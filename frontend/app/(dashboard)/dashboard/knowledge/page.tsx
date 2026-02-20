@@ -86,18 +86,18 @@ export default function KnowledgePage() {
   return (
     <div className="space-y-8 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Knowledge Base</h1>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+        <h1 className="text-2xl font-semibold text-brand-textHeading">Knowledge Base</h1>
+        <p className="mt-1 text-sm text-brand-textMuted">
           Upload PDFs, text, or URLs to train your bots
         </p>
       </div>
 
       <div className="flex gap-4 items-center">
-        <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Bot</label>
+        <label className="text-sm font-medium text-brand-text">Bot</label>
         <select
           value={selectedBotId}
           onChange={(e) => setSelectedBotId(e.target.value)}
-          className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-zinc-900 dark:text-zinc-100 min-w-[200px]"
+          className="rounded-lg border border-brand-borderLight bg-brand-sidebar px-3 py-2 text-brand-text min-w-[200px] focus:ring-2 focus:ring-brand-primary"
         >
           <option value="">Select a bot</option>
           {bots.map((b) => (
@@ -110,10 +110,10 @@ export default function KnowledgePage() {
         <>
           <Card>
             <CardHeader>
-              <h2 className="font-semibold text-zinc-900 dark:text-zinc-100">Add knowledge</h2>
+              <h2 className="font-semibold text-brand-textHeading">Add knowledge</h2>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-2">
+              <div className="flex gap-2 border-b border-brand-border pb-2">
                 {(['pdf', 'text', 'url'] as const).map((t) => (
                   <button
                     key={t}
@@ -121,8 +121,8 @@ export default function KnowledgePage() {
                     onClick={() => setTab(t)}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
                       tab === t
-                        ? 'bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100'
-                        : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+                        ? 'bg-brand-divider text-brand-textHeading'
+                        : 'text-brand-textMuted hover:text-brand-text'
                     }`}
                   >
                     {t === 'pdf' && <FileText className="w-4 h-4 inline mr-1" />}
@@ -138,7 +138,7 @@ export default function KnowledgePage() {
                     type="file"
                     accept="application/pdf"
                     onChange={(e) => setFile(e.target.files?.[0] || null)}
-                    className="block w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-zinc-100 dark:file:bg-zinc-800 file:text-zinc-900 dark:file:text-zinc-100"
+                    className="block w-full text-sm text-brand-textMuted file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-brand-border file:text-brand-text"
                   />
                 </div>
               )}
@@ -148,7 +148,7 @@ export default function KnowledgePage() {
                   onChange={(e) => setText(e.target.value)}
                   rows={6}
                   placeholder="Paste or type content here..."
-                  className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-zinc-900 dark:text-zinc-100 placeholder-zinc-500"
+                  className="w-full rounded-lg border border-brand-borderLight bg-brand-sidebar px-3 py-2 text-brand-text placeholder-brand-textDisabled focus:ring-2 focus:ring-brand-primary"
                 />
               )}
               {tab === 'url' && (
@@ -157,7 +157,7 @@ export default function KnowledgePage() {
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   placeholder="https://example.com/page"
-                  className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-zinc-900 dark:text-zinc-100 placeholder-zinc-500"
+                  className="w-full rounded-lg border border-brand-borderLight bg-brand-sidebar px-3 py-2 text-brand-text placeholder-brand-textDisabled focus:ring-2 focus:ring-brand-primary"
                 />
               )}
               <Button onClick={handleUpload} disabled={uploading} className="transition-all">
@@ -168,7 +168,7 @@ export default function KnowledgePage() {
 
           <Card className="transition-shadow hover:shadow-md">
             <CardHeader>
-              <h2 className="font-semibold text-zinc-900 dark:text-zinc-100">Sources</h2>
+              <h2 className="font-semibold text-brand-textHeading">Sources</h2>
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -190,17 +190,17 @@ export default function KnowledgePage() {
                   {sources.map((s) => (
                     <li
                       key={s.sourceId}
-                      className="flex items-center justify-between rounded-xl border border-zinc-200 dark:border-zinc-800 p-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50 animate-in"
+                      className="flex items-center justify-between rounded-xl border border-brand-border p-3 transition-colors hover:bg-brand-bgCardHover animate-in"
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-sm font-medium capitalize">{s.sourceType}</span>
                         {s.sourceMeta?.filename && (
-                          <span className="text-sm text-zinc-500">{s.sourceMeta.filename}</span>
+                          <span className="text-sm text-brand-textMuted">{s.sourceMeta.filename}</span>
                         )}
                         {s.sourceMeta?.url && (
-                          <span className="text-sm text-zinc-500 truncate max-w-xs">{s.sourceMeta.url}</span>
+                          <span className="text-sm text-brand-textMuted truncate max-w-xs">{s.sourceMeta.url}</span>
                         )}
-                        <span className="text-xs text-zinc-400">{s.chunksCount} chunks</span>
+                        <span className="text-xs text-brand-textMuted">{s.chunksCount} chunks</span>
                       </div>
                     </li>
                   ))}

@@ -64,13 +64,13 @@ export default function ChatPage() {
     <div className="space-y-6 h-full flex flex-col animate-fade-in">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Test Chat</h1>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+          <h1 className="text-2xl font-semibold text-brand-textHeading">Test Chat</h1>
+          <p className="mt-1 text-sm text-brand-textMuted">
             Try your bot with RAG from your knowledge base
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Bot</label>
+          <label className="text-sm font-medium text-brand-text">Bot</label>
           <select
             value={selectedBotId}
             onChange={(e) => {
@@ -78,7 +78,7 @@ export default function ChatPage() {
               setMessages([]);
               setConversationId(null);
             }}
-            className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-zinc-900 dark:text-zinc-100 min-w-[180px]"
+            className="rounded-lg border border-brand-borderLight bg-brand-sidebar px-3 py-2 text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-brand-primary min-w-[180px]"
           >
             <option value="">Select a bot</option>
             {bots.map((b) => (
@@ -94,8 +94,8 @@ export default function ChatPage() {
       {!selectedBotId ? (
         <Card className="flex-1 flex items-center justify-center">
           <CardContent className="py-16 text-center">
-            <MessageSquare className="w-12 h-12 mx-auto text-zinc-400 dark:text-zinc-500 mb-4" />
-            <p className="text-zinc-500 dark:text-zinc-400">Select a bot to start testing.</p>
+            <MessageSquare className="w-12 h-12 mx-auto text-brand-textMuted mb-4" />
+            <p className="text-brand-textMuted">Select a bot to start testing.</p>
           </CardContent>
         </Card>
       ) : (
@@ -103,7 +103,7 @@ export default function ChatPage() {
           <CardContent className="flex flex-col flex-1 min-h-0 p-0">
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {messages.length === 0 && (
-                <div className="text-center py-12 text-zinc-500 dark:text-zinc-400 text-sm">
+                <div className="text-center py-12 text-brand-textMuted text-sm">
                   Send a message to start. The bot will use your knowledge base when available.
                 </div>
               )}
@@ -115,8 +115,8 @@ export default function ChatPage() {
                   <div
                     className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
                       m.role === 'user'
-                        ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900'
-                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100'
+                        ? 'bg-brand-primary text-white'
+                        : 'bg-brand-border border border-brand-borderLight text-brand-text'
                     }`}
                   >
                     <p className="text-sm whitespace-pre-wrap">{m.content}</p>
@@ -125,14 +125,14 @@ export default function ChatPage() {
               ))}
               {sendMessage.isPending && (
                 <div className="flex justify-start">
-                  <div className="rounded-2xl bg-zinc-100 dark:bg-zinc-800 px-4 py-2.5 text-sm text-zinc-500">
+                  <div className="rounded-2xl bg-brand-border border border-brand-borderLight px-4 py-2.5 text-sm text-brand-accent">
                     Thinking…
                   </div>
                 </div>
               )}
               <div ref={messagesEndRef} />
             </div>
-            <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
+            <div className="p-4 border-t border-brand-border">
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -145,7 +145,7 @@ export default function ChatPage() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Type a message..."
-                  className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 py-2.5 text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-zinc-600"
+                  className="flex-1 rounded-lg border border-brand-borderLight bg-brand-sidebar px-4 py-2.5 text-brand-text placeholder-brand-textDisabled focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-brand-primary"
                   disabled={sendMessage.isPending}
                 />
                 <Button type="submit" disabled={sendMessage.isPending || !input.trim()}>

@@ -17,15 +17,14 @@ export function Button({
   return (
     <button
       className={clsx(
-        'rounded-lg font-medium transition focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 disabled:opacity-50',
+        'rounded-lg font-medium transition focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2 focus:ring-offset-brand-bg disabled:opacity-50',
         {
           primary:
-            'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:opacity-90 focus:ring-zinc-500',
+            'bg-brand-primary hover:bg-brand-primaryHover text-white shadow-sm hover:shadow-glow-primary',
           secondary:
-            'border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-700 focus:ring-zinc-400',
-          ghost: 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 focus:ring-zinc-400',
-          danger:
-            'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
+            'border border-brand-borderLight bg-brand-border hover:bg-[#273244] text-foreground',
+          ghost: 'text-brand-primaryLight hover:bg-brand-divider',
+          danger: 'bg-brand-error text-white hover:opacity-90 focus:ring-brand-error',
         }[variant],
         {
           sm: 'px-3 py-1.5 text-sm',

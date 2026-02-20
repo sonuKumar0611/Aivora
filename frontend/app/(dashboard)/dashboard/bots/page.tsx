@@ -21,8 +21,8 @@ export default function BotsPage() {
     <div className="space-y-8 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">My Bots</h1>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+          <h1 className="text-2xl font-semibold text-brand-textHeading">My Bots</h1>
+          <p className="mt-1 text-sm text-brand-textMuted">
             Create and manage your support bots
           </p>
         </div>
@@ -68,15 +68,15 @@ export default function BotsPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {bots.map((bot) => (
             <Link key={bot.id} href={`/dashboard/bots/${bot.id}`} className="block animate-in">
-              <Card className="h-full hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-md transition-all duration-200 cursor-pointer group">
+              <Card className="h-full hover:border-brand-borderLight hover:shadow-md transition-all duration-200 cursor-pointer group">
                 <CardHeader>
-                  <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-zinc-700 dark:group-hover:text-zinc-200 transition-colors">
+                  <h3 className="font-semibold text-brand-textHeading group-hover:text-brand-primaryLight transition-colors">
                     {bot.name}
                   </h3>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 capitalize">{bot.tone}</p>
+                  <p className="text-xs text-brand-textMuted capitalize">{bot.tone}</p>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400 line-clamp-2">
+                  <p className="text-sm text-brand-textMuted line-clamp-2">
                     {bot.description}
                   </p>
                 </CardContent>

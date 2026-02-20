@@ -34,17 +34,17 @@ export default function AnalyticsPage() {
     <div className="space-y-8 animate-fade-in">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Analytics</h1>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+          <h1 className="text-2xl font-semibold text-brand-textHeading">Analytics</h1>
+          <p className="mt-1 text-sm text-brand-textMuted">
             Conversations, messages, and usage by bot
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Bot</label>
+          <label className="text-sm font-medium text-brand-text">Bot</label>
           <select
             value={selectedBotId}
             onChange={(e) => setSelectedBotId(e.target.value)}
-            className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-zinc-900 dark:text-zinc-100 min-w-[200px]"
+            className="rounded-lg border border-brand-borderLight bg-brand-sidebar px-3 py-2 text-brand-text min-w-[200px] focus:ring-2 focus:ring-brand-primary"
           >
             <option value="">Select a bot</option>
             {bots.map((b) => (
@@ -57,8 +57,8 @@ export default function AnalyticsPage() {
       {!selectedBotId ? (
         <Card>
           <CardContent className="py-16 text-center">
-            <TrendingUp className="w-12 h-12 mx-auto text-zinc-400 dark:text-zinc-500 mb-4" />
-            <p className="text-zinc-500 dark:text-zinc-400">Select a bot to view analytics.</p>
+            <TrendingUp className="w-12 h-12 mx-auto text-brand-textMuted mb-4" />
+            <p className="text-brand-textMuted">Select a bot to view analytics.</p>
           </CardContent>
         </Card>
       ) : isLoading ? (
@@ -86,14 +86,14 @@ export default function AnalyticsPage() {
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center gap-3">
-                  <div className="rounded-lg bg-zinc-100 dark:bg-zinc-800 p-3">
-                    <MessageCircle className="w-6 h-6 text-zinc-600 dark:text-zinc-400" />
+                  <div className="rounded-lg bg-brand-border p-3">
+                    <MessageCircle className="w-6 h-6 text-brand-textMuted" />
                   </div>
                   <div>
-                    <p className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
+                    <p className="text-2xl font-semibold text-brand-textHeading">
                       {totalConversations}
                     </p>
-                    <p className="text-sm text-zinc-500 dark:text-zinc-400">Total conversations</p>
+                    <p className="text-sm text-brand-textMuted">Total conversations</p>
                   </div>
                 </div>
               </CardContent>
@@ -101,14 +101,14 @@ export default function AnalyticsPage() {
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center gap-3">
-                  <div className="rounded-lg bg-zinc-100 dark:bg-zinc-800 p-3">
-                    <MessageSquare className="w-6 h-6 text-zinc-600 dark:text-zinc-400" />
+                  <div className="rounded-lg bg-brand-border p-3">
+                    <MessageSquare className="w-6 h-6 text-brand-textMuted" />
                   </div>
                   <div>
-                    <p className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
+                    <p className="text-2xl font-semibold text-brand-textHeading">
                       {totalMessages}
                     </p>
-                    <p className="text-sm text-zinc-500 dark:text-zinc-400">Total messages</p>
+                    <p className="text-sm text-brand-textMuted">Total messages</p>
                   </div>
                 </div>
               </CardContent>
@@ -117,21 +117,21 @@ export default function AnalyticsPage() {
 
           <Card>
             <CardHeader>
-              <h2 className="font-semibold text-zinc-900 dark:text-zinc-100">Daily usage</h2>
-              <p className="text-sm text-zinc-500">Conversations per day (last 30 days)</p>
+              <h2 className="font-semibold text-brand-textHeading">Daily usage</h2>
+              <p className="text-sm text-brand-textMuted">Conversations per day (last 30 days)</p>
             </CardHeader>
             <CardContent>
               <div className="h-64">
                 {dailyUsage.length === 0 ? (
-                  <div className="h-full flex items-center justify-center text-zinc-500 text-sm">
+                  <div className="h-full flex items-center justify-center text-brand-textMuted text-sm">
                     No data yet
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={dailyUsage} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-zinc-200 dark:stroke-zinc-700" />
-                      <XAxis dataKey="date" tick={{ fontSize: 12 }} className="text-zinc-500" />
-                      <YAxis tick={{ fontSize: 12 }} className="text-zinc-500" />
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-brand-border" />
+                      <XAxis dataKey="date" tick={{ fontSize: 12 }} className="text-brand-textMuted" />
+                      <YAxis tick={{ fontSize: 12 }} className="text-brand-textMuted" />
                       <Tooltip
                         contentStyle={{
                           backgroundColor: 'hsl(var(--card))',
@@ -150,21 +150,21 @@ export default function AnalyticsPage() {
 
           <Card>
             <CardHeader>
-              <h2 className="font-semibold text-zinc-900 dark:text-zinc-100">Most asked topics</h2>
-              <p className="text-sm text-zinc-500">Keyword frequency in messages</p>
+              <h2 className="font-semibold text-brand-textHeading">Most asked topics</h2>
+              <p className="text-sm text-brand-textMuted">Keyword frequency in messages</p>
             </CardHeader>
             <CardContent>
               {topKeywords.length === 0 ? (
-                <p className="text-sm text-zinc-500">No keywords yet. Chat with your bot to see trends.</p>
+                <p className="text-sm text-brand-textMuted">No keywords yet. Chat with your bot to see trends.</p>
               ) : (
                 <ul className="flex flex-wrap gap-2">
                   {topKeywords.map((k) => (
                     <li
                       key={k.word}
-                      className="rounded-lg bg-zinc-100 dark:bg-zinc-800 px-3 py-1.5 text-sm text-zinc-900 dark:text-zinc-100"
+                      className="rounded-lg bg-brand-border px-3 py-1.5 text-sm text-brand-textHeading"
                     >
                       <span className="font-medium">{k.word}</span>
-                      <span className="ml-1 text-zinc-500 dark:text-zinc-400">({k.count})</span>
+                      <span className="ml-1 text-brand-textMuted">({k.count})</span>
                     </li>
                   ))}
                 </ul>
