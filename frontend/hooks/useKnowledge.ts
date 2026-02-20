@@ -11,7 +11,7 @@ export interface AssignedBot {
 export interface KnowledgeSource {
   id: string;
   sourceType: string;
-  sourceMeta?: { filename?: string; url?: string };
+  sourceMeta?: { name?: string; filename?: string; url?: string };
   chunksCount: number;
   createdAt: string;
   assignedBots: AssignedBot[];
@@ -28,12 +28,18 @@ export function useKnowledge() {
   });
 
   const uploadSource = useMutation({
-    mutationFn: async (payload: { type: 'pdf'; file: File } | { type: 'text'; text: string } | { type: 'url'; url: string }) => {
+    mutationFn: async (
+      payload:
+        | { type: 'pdf'; file: File; name: string }
+        | { type: 'text'; text: string; name: string }
+        | { type: 'url'; url: string; name: string }
+    ) => {
       const token = typeof window !== 'undefined' ? localStorage.getItem('aivora_token') : null;
       const API_URL = getApiUrl();
       if (payload.type === 'pdf') {
         const form = new FormData();
         form.append('file', payload.file);
+        form.append('name', payload.name);
         const res = await fetch(`${API_URL}/api/knowledge/upload`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
@@ -43,9 +49,10 @@ export function useKnowledge() {
         if (!res.ok) throw new Error(data.message || 'Upload failed');
         return data;
       }
-      const body = payload.type === 'text'
-        ? { type: 'text', text: payload.text }
-        : { type: 'url', url: payload.url };
+      const body =
+        payload.type === 'text'
+          ? { type: 'text', text: payload.text, name: payload.name }
+          : { type: 'url', url: payload.url, name: payload.name };
       const { data } = await api.post<{ data: { source: KnowledgeSource } }>('/knowledge/upload', body);
       return data;
     },

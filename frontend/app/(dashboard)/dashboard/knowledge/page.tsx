@@ -19,8 +19,8 @@ function sourceColumns(): { id: string; label: string; render: (row: KnowledgeSo
       id: 'name',
       label: 'Name / URL',
       render: (row) => (
-        <span className="text-brand-text font-medium truncate max-w-[240px] block" title={row.sourceMeta?.filename || row.sourceMeta?.url || ''}>
-          {row.sourceMeta?.filename || row.sourceMeta?.url || '—'}
+        <span className="text-brand-text font-medium truncate max-w-[240px] block" title={row.sourceMeta?.name || row.sourceMeta?.filename || row.sourceMeta?.url || ''}>
+          {row.sourceMeta?.name || row.sourceMeta?.filename || row.sourceMeta?.url || '—'}
         </span>
       ),
     },
@@ -51,10 +51,22 @@ export default function KnowledgePage() {
   const { sources, isLoading, isError, refetch, uploadSource, deleteSource } = useKnowledge();
   const [addOpen, setAddOpen] = useState(false);
   const [tab, setTab] = useState<'pdf' | 'text' | 'url'>('pdf');
+  const [documentName, setDocumentName] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [text, setText] = useState('');
   const [url, setUrl] = useState('');
   const [dragOver, setDragOver] = useState(false);
+
+  const trimmedName = documentName.trim();
+  const isNameValid = trimmedName.length >= 1 && trimmedName.length <= 255;
+  const nameError =
+    documentName.length > 0
+      ? trimmedName.length === 0
+        ? 'Document name is required'
+        : trimmedName.length > 255
+          ? 'Document name must be at most 255 characters'
+          : null
+      : null;
 
   const handleDelete = (row: KnowledgeSource) => {
     if (row.assignedBots.length > 0) {
@@ -62,7 +74,7 @@ export default function KnowledgePage() {
       toast.error(`Remove this document from bot config first: ${names}`);
       return;
     }
-    if (!confirm(`Delete "${row.sourceMeta?.filename || row.sourceMeta?.url || row.sourceType}"?`)) return;
+    if (!confirm(`Delete "${row.sourceMeta?.name || row.sourceMeta?.filename || row.sourceMeta?.url || row.sourceType}"?`)) return;
     deleteSource.mutate(row.id, {
       onSuccess: () => toast.success('Document deleted'),
       onError: (err) => toast.error(getErrorMessage(err)),
@@ -70,17 +82,22 @@ export default function KnowledgePage() {
   };
 
   const handleUpload = () => {
+    if (!isNameValid) {
+      toast.error(nameError || 'Enter a document name (1–255 characters)');
+      return;
+    }
     if (tab === 'pdf') {
       if (!file) {
         toast.error('Choose a PDF file');
         return;
       }
       uploadSource.mutate(
-        { type: 'pdf', file },
+        { type: 'pdf', file, name: trimmedName },
         {
           onSuccess: (data: { data?: { source?: { chunksCount?: number } } }) => {
             toast.success(`Uploaded ${data?.data?.source?.chunksCount ?? 0} chunks`);
             setFile(null);
+            setDocumentName('');
             setAddOpen(false);
           },
           onError: (err) => toast.error(getErrorMessage(err)),
@@ -94,11 +111,12 @@ export default function KnowledgePage() {
         return;
       }
       uploadSource.mutate(
-        { type: 'text', text: text.trim() },
+        { type: 'text', text: text.trim(), name: trimmedName },
         {
           onSuccess: (data: { data?: { source?: { chunksCount?: number } } }) => {
             toast.success(`Uploaded ${data?.data?.source?.chunksCount ?? 0} chunks`);
             setText('');
+            setDocumentName('');
             setAddOpen(false);
           },
           onError: (err) => toast.error(getErrorMessage(err)),
@@ -112,11 +130,12 @@ export default function KnowledgePage() {
         return;
       }
       uploadSource.mutate(
-        { type: 'url', url: url.trim() },
+        { type: 'url', url: url.trim(), name: trimmedName },
         {
           onSuccess: (data: { data?: { source?: { chunksCount?: number } } }) => {
             toast.success(`Uploaded ${data?.data?.source?.chunksCount ?? 0} chunks`);
             setUrl('');
+            setDocumentName('');
             setAddOpen(false);
           },
           onError: (err) => toast.error(getErrorMessage(err)),
@@ -175,7 +194,7 @@ export default function KnowledgePage() {
           data={sources}
           getRowId={(row) => row.id}
           getSearchableText={(row) =>
-            `${row.sourceType} ${row.sourceMeta?.filename ?? ''} ${row.sourceMeta?.url ?? ''} ${row.assignedBots.map((b) => b.name).join(' ')}`
+            `${row.sourceType} ${row.sourceMeta?.name ?? ''} ${row.sourceMeta?.filename ?? ''} ${row.sourceMeta?.url ?? ''} ${row.assignedBots.map((b) => b.name).join(' ')}`
           }
           isLoading={isLoading}
           emptyMessage={
@@ -193,11 +212,6 @@ export default function KnowledgePage() {
             </Button>
           }
           actions={{
-            onView: (row) =>
-              toast.success(
-                row.sourceMeta?.filename || row.sourceMeta?.url || row.sourceType || 'Document',
-                { icon: '📄' }
-              ),
             onDelete: handleDelete,
           }}
         />
@@ -205,7 +219,13 @@ export default function KnowledgePage() {
       )}
 
       {addOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={() => setAddOpen(false)}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
+          onClick={() => {
+            setAddOpen(false);
+            setDocumentName('');
+          }}
+        >
           <Card
             className="w-full max-w-lg shadow-xl max-h-[90vh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
@@ -214,7 +234,10 @@ export default function KnowledgePage() {
               <h2 className="text-lg font-semibold text-brand-textHeading">Add document</h2>
               <button
                 type="button"
-                onClick={() => setAddOpen(false)}
+                onClick={() => {
+                  setAddOpen(false);
+                  setDocumentName('');
+                }}
                 className="p-1 rounded text-brand-textMuted hover:text-brand-text"
                 aria-label="Close"
               >
@@ -222,6 +245,30 @@ export default function KnowledgePage() {
               </button>
             </CardHeader>
             <CardContent className="space-y-4 overflow-y-auto">
+              <div className="space-y-2">
+                <label htmlFor="kb-document-name" className="text-sm font-medium text-brand-textHeading">
+                  Document name <span className="text-brand-error">*</span>
+                </label>
+                <input
+                  id="kb-document-name"
+                  type="text"
+                  value={documentName}
+                  onChange={(e) => setDocumentName(e.target.value)}
+                  placeholder="e.g. Product FAQ, Onboarding Guide"
+                  maxLength={255}
+                  className={`w-full rounded-lg border bg-brand-sidebar px-3 py-2 text-brand-text placeholder-brand-textDisabled focus:ring-2 focus:ring-brand-primary ${
+                    nameError ? 'border-brand-error' : 'border-brand-borderLight'
+                  }`}
+                  aria-invalid={!!nameError}
+                  aria-describedby={nameError ? 'kb-name-error' : undefined}
+                />
+                {nameError && (
+                  <p id="kb-name-error" className="text-sm text-brand-error">
+                    {nameError}
+                  </p>
+                )}
+                <p className="text-xs text-brand-textMuted">{documentName.length}/255</p>
+              </div>
               <div className="flex gap-2 border-b border-brand-border pb-2">
                 {(['pdf', 'text', 'url'] as const).map((t) => (
                   <button
@@ -284,10 +331,16 @@ export default function KnowledgePage() {
               )}
 
               <div className="flex gap-2 justify-end pt-2">
-                <Button variant="secondary" onClick={() => setAddOpen(false)}>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setAddOpen(false);
+                    setDocumentName('');
+                  }}
+                >
                   Cancel
                 </Button>
-                <Button onClick={handleUpload} disabled={uploadSource.isPending}>
+                <Button onClick={handleUpload} disabled={uploadSource.isPending || !isNameValid}>
                   {uploadSource.isPending ? 'Uploading…' : 'Upload'}
                 </Button>
               </div>

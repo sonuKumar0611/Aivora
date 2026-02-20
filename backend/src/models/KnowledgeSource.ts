@@ -5,7 +5,7 @@ export type SourceType = 'pdf' | 'text' | 'url';
 export interface IKnowledgeSource extends Document {
   userId: mongoose.Types.ObjectId;
   sourceType: SourceType;
-  sourceMeta?: { filename?: string; url?: string };
+  sourceMeta?: { name?: string; filename?: string; url?: string };
   createdAt: Date;
 }
 

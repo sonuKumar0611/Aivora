@@ -24,7 +24,7 @@ export async function uploadKnowledge(req: AuthRequest, res: Response, next: Nex
   try {
     const userId = req.user!.id;
     const file = req.file;
-    let result: { chunks: string[]; sourceType: 'pdf' | 'text' | 'url'; sourceMeta?: { filename?: string; url?: string } };
+    let result: { chunks: string[]; sourceType: 'pdf' | 'text' | 'url'; sourceMeta?: { name?: string; filename?: string; url?: string } };
 
     if (file) {
       result = await ingestPdfAsync(file.buffer, file.originalname || 'document.pdf');
@@ -39,6 +39,17 @@ export async function uploadKnowledge(req: AuthRequest, res: Response, next: Nex
       });
       return;
     }
+
+    const rawName = typeof req.body.name === 'string' ? req.body.name.trim() : '';
+    if (rawName.length === 0) {
+      res.status(400).json({ error: 'Validation error', message: 'Document name is required' });
+      return;
+    }
+    if (rawName.length > 255) {
+      res.status(400).json({ error: 'Validation error', message: 'Document name must be at most 255 characters' });
+      return;
+    }
+    result.sourceMeta = { ...result.sourceMeta, name: rawName };
 
     if (result.chunks.length === 0) {
       res.status(400).json({ error: 'No content', message: 'No text could be extracted or content is empty' });

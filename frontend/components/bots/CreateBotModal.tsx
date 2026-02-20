@@ -119,7 +119,7 @@ export function CreateBotModal({ open, onClose, onSubmit, isLoading }: CreateBot
                         className="rounded border-brand-borderLight text-brand-primary focus:ring-brand-primary"
                       />
                       <span className="text-sm text-brand-text truncate flex-1">
-                        {s.sourceMeta?.filename || s.sourceMeta?.url || s.sourceType}
+                        {s.sourceMeta?.name || s.sourceMeta?.filename || s.sourceMeta?.url || s.sourceType}
                       </span>
                       <span className="text-xs text-brand-textMuted">{s.chunksCount} chunks</span>
                     </label>

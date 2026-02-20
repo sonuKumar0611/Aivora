@@ -9,7 +9,7 @@ export type IngestSourceType = 'pdf' | 'text' | 'url';
 export interface IngestResult {
   chunks: string[];
   sourceType: IngestSourceType;
-  sourceMeta?: { filename?: string; url?: string };
+  sourceMeta?: { name?: string; filename?: string; url?: string };
 }
 
 export async function extractTextFromPdf(buffer: Buffer): Promise<string> {
