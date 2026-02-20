@@ -5,6 +5,7 @@ export interface IBot extends Document {
   name: string;
   description: string;
   tone: string;
+  assignedSourceIds: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -15,6 +16,7 @@ const botSchema = new Schema<IBot>(
     name: { type: String, required: true, trim: true },
     description: { type: String, required: true, trim: true },
     tone: { type: String, required: true, trim: true, default: 'professional' },
+    assignedSourceIds: { type: [Schema.Types.ObjectId], ref: 'KnowledgeSource', default: [] },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
   },

@@ -61,7 +61,7 @@ export function Sidebar() {
     <aside
       className={clsx(
         'flex-shrink-0 h-full flex flex-col border-r border-brand-border bg-brand-sidebar transition-[width] duration-300 ease-in-out',
-        'relative overflow-hidden',
+        'relative overflow-visible',
         collapsed ? 'w-[72px]' : 'w-56'
       )}
     >
@@ -179,7 +179,7 @@ export function Sidebar() {
 
       {/* Border hover zone: full height so arrow shows when hovering logo or menu items; arrow stays near logo */}
       <div
-        className="absolute -right-4 top-0 bottom-0 w-12 z-10"
+        className="absolute -right-4 top-0 bottom-0 w-12 z-50"
         onMouseEnter={() => setBorderHovered(true)}
         onMouseLeave={() => setBorderHovered(false)}
         aria-hidden

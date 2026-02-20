@@ -67,6 +67,7 @@ export interface Bot {
   name: string;
   description: string;
   tone: string;
+  assignedSourceIds: string[];
   createdAt: string;
   updatedAt: string;
 }

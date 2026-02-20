@@ -1,13 +1,12 @@
 import { Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import multer from 'multer';
-import { z } from 'zod';
 import { AuthRequest } from '../middleware/auth';
 import { Bot } from '../models/Bot';
+import { KnowledgeSource } from '../models/KnowledgeSource';
 import { KnowledgeChunk } from '../models/KnowledgeChunk';
 import { getEmbeddings } from '../services/openai';
 import { ingestPdfAsync, ingestText, ingestUrl } from '../services/ingest';
-import { ApiError } from '../middleware/errorHandler';
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -18,30 +17,12 @@ const upload = multer({
   },
 });
 
-const uploadSchema = z.object({
-  botId: z.string().min(1),
-  type: z.enum(['text', 'url']).optional(),
-  text: z.string().optional(),
-  url: z.string().url().optional(),
-});
-
 export const uploadMiddleware = upload.single('file');
 
+/** Upload a new knowledge source (no bot assignment; bots assign at create/edit). */
 export async function uploadKnowledge(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
     const userId = req.user!.id;
-    const botId = req.body.botId as string | undefined;
-    if (!botId) {
-      res.status(400).json({ error: 'Validation error', message: 'botId is required' });
-      return;
-    }
-
-    const bot = await Bot.findOne({ _id: botId, userId });
-    if (!bot) {
-      res.status(404).json({ error: 'Not found', message: 'Bot not found' });
-      return;
-    }
-
     const file = req.file;
     let result: { chunks: string[]; sourceType: 'pdf' | 'text' | 'url'; sourceMeta?: { filename?: string; url?: string } };
 
@@ -65,12 +46,14 @@ export async function uploadKnowledge(req: AuthRequest, res: Response, next: Nex
     }
 
     const embeddings = await getEmbeddings(result.chunks);
-    const sourceId = new mongoose.Types.ObjectId().toString();
-    const docs = result.chunks.map((text, i) => ({
-      botId: bot._id,
+    const source = await KnowledgeSource.create({
+      userId: new mongoose.Types.ObjectId(userId),
       sourceType: result.sourceType,
-      sourceId,
       sourceMeta: result.sourceMeta,
+    });
+
+    const docs = result.chunks.map((text, i) => ({
+      sourceId: source._id,
       text,
       embedding: embeddings[i],
     }));
@@ -78,10 +61,13 @@ export async function uploadKnowledge(req: AuthRequest, res: Response, next: Nex
 
     res.status(201).json({
       data: {
-        sourceId,
-        chunksCount: result.chunks.length,
-        sourceType: result.sourceType,
-        sourceMeta: result.sourceMeta,
+        source: {
+          id: source._id.toString(),
+          sourceType: source.sourceType,
+          sourceMeta: source.sourceMeta,
+          chunksCount: result.chunks.length,
+          createdAt: source.createdAt,
+        },
       },
       message: 'Knowledge uploaded',
     });
@@ -94,31 +80,44 @@ export async function uploadKnowledge(req: AuthRequest, res: Response, next: Nex
   }
 }
 
-export async function listKnowledge(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+/** List all knowledge sources for the user, with assigned bots for each. */
+export async function listAllKnowledge(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
     const userId = req.user!.id;
-    const { botId } = req.params;
-    const bot = await Bot.findOne({ _id: botId, userId });
-    if (!bot) {
-      res.status(404).json({ error: 'Not found', message: 'Bot not found' });
-      return;
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+
+    const sources = await KnowledgeSource.find({ userId: userObjectId }).sort({ createdAt: -1 }).lean();
+    const bots = await Bot.find({ userId: userObjectId }).select('_id name assignedSourceIds').lean();
+
+    const sourceIdsToBots = new Map<string, { id: string; name: string }[]>();
+    for (const bot of bots) {
+      const botInfo = { id: (bot as { _id: mongoose.Types.ObjectId })._id.toString(), name: bot.name };
+      for (const sid of bot.assignedSourceIds || []) {
+        const key = sid.toString();
+        if (!sourceIdsToBots.has(key)) sourceIdsToBots.set(key, []);
+        sourceIdsToBots.get(key)!.push(botInfo);
+      }
     }
 
-    const sources = await KnowledgeChunk.aggregate([
-      { $match: { botId: bot._id } },
-      { $group: { _id: '$sourceId', sourceType: { $first: '$sourceType' }, sourceMeta: { $first: '$sourceMeta' }, count: { $sum: 1 } } },
-      { $sort: { _id: -1 } },
+    const chunkCounts = await KnowledgeChunk.aggregate<{ _id: mongoose.Types.ObjectId; count: number }>([
+      { $group: { _id: '$sourceId', count: { $sum: 1 } } },
     ]);
+    const countBySource = new Map(chunkCounts.map((c) => [c._id.toString(), c.count]));
+
+    const list = sources.map((s) => {
+      const id = (s as { _id: mongoose.Types.ObjectId })._id.toString();
+      return {
+        id,
+        sourceType: s.sourceType,
+        sourceMeta: s.sourceMeta,
+        chunksCount: countBySource.get(id) ?? 0,
+        createdAt: s.createdAt,
+        assignedBots: sourceIdsToBots.get(id) ?? [],
+      };
+    });
 
     res.json({
-      data: {
-        sources: sources.map((s) => ({
-          sourceId: s._id,
-          sourceType: s.sourceType,
-          sourceMeta: s.sourceMeta,
-          chunksCount: s.count,
-        })),
-      },
+      data: { sources: list },
       message: 'OK',
     });
   } catch (err) {
@@ -126,21 +125,37 @@ export async function listKnowledge(req: AuthRequest, res: Response, next: NextF
   }
 }
 
+/** Delete a knowledge source. Fails if any bot has this source assigned. */
 export async function deleteKnowledgeSource(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
     const userId = req.user!.id;
-    const { botId, sourceId } = req.params;
-    const bot = await Bot.findOne({ _id: botId, userId });
-    if (!bot) {
-      res.status(404).json({ error: 'Not found', message: 'Bot not found' });
-      return;
-    }
-    const result = await KnowledgeChunk.deleteMany({ botId: bot._id, sourceId });
-    if (result.deletedCount === 0) {
+    const { sourceId } = req.params;
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+    const sourceObjectId = new mongoose.Types.ObjectId(sourceId);
+
+    const source = await KnowledgeSource.findOne({ _id: sourceObjectId, userId: userObjectId });
+    if (!source) {
       res.status(404).json({ error: 'Not found', message: 'Knowledge source not found' });
       return;
     }
-    res.json({ data: { deleted: result.deletedCount }, message: 'Source deleted' });
+
+    const botsUsing = await Bot.find({ userId: userObjectId, assignedSourceIds: sourceObjectId })
+      .select('name')
+      .lean();
+    if (botsUsing.length > 0) {
+      const names = botsUsing.map((b) => b.name).join(', ');
+      res.status(400).json({
+        error: 'Cannot delete',
+        message: `This document is assigned to one or more bots. Remove it from their config first: ${names}`,
+        assignedBots: botsUsing.map((b) => ({ name: b.name })),
+      });
+      return;
+    }
+
+    await KnowledgeChunk.deleteMany({ sourceId: sourceObjectId });
+    await KnowledgeSource.deleteOne({ _id: sourceObjectId });
+
+    res.json({ data: { deleted: true }, message: 'Source deleted' });
   } catch (err) {
     next(err);
   }

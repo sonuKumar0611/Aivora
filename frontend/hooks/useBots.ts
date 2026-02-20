@@ -19,19 +19,28 @@ export function useBots() {
   });
 
   const createBot = useMutation({
-    mutationFn: async (body: { name: string; description: string; tone: string }) => {
+    mutationFn: async (body: { name: string; description: string; tone: string; assignedSourceIds: string[] }) => {
       const { data } = await api.post<{ data: { bot: Bot } }>('/bots', body);
       return data.data.bot;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['bots'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bots'] });
+      queryClient.invalidateQueries({ queryKey: ['knowledge'] });
+    },
   });
 
   const updateBot = useMutation({
-    mutationFn: async ({ id, ...body }: { id: string; name?: string; description?: string; tone?: string }) => {
+    mutationFn: async ({
+      id,
+      ...body
+    }: { id: string; name?: string; description?: string; tone?: string; assignedSourceIds?: string[] }) => {
       const { data } = await api.put<{ data: { bot: Bot } }>(`/bots/${id}`, body);
       return data.data.bot;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['bots'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bots'] });
+      queryClient.invalidateQueries({ queryKey: ['knowledge'] });
+    },
   });
 
   const deleteBot = useMutation({

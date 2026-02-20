@@ -48,6 +48,8 @@ export interface DataTableProps<T> {
   headerAction?: React.ReactNode;
   /** Compact rows */
   compact?: boolean;
+  /** When true, table fills available height with scrollable body (for dashboard layouts) */
+  fillHeight?: boolean;
   className?: string;
 }
 
@@ -67,6 +69,7 @@ export function DataTable<T>({
   description,
   headerAction,
   compact = false,
+  fillHeight = false,
   className,
 }: DataTableProps<T>) {
   const [page, setPage] = useState(0);
@@ -99,9 +102,15 @@ export function DataTable<T>({
   const hasActions = actions && (actions.onView || actions.onEdit || actions.onDelete);
 
   return (
-    <div className={clsx('rounded-xl border border-brand-border bg-brand-bgCard overflow-hidden', className)}>
+    <div
+      className={clsx(
+        'rounded-xl border border-brand-border bg-brand-bgCard overflow-hidden',
+        fillHeight && 'flex flex-col h-full min-h-0',
+        className
+      )}
+    >
       {(title || description || (searchPlaceholder && searchPlaceholder.length > 0) || headerAction) && (
-        <div className="p-4 sm:p-5 border-b border-brand-border flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="p-4 sm:p-5 border-b border-brand-border flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between shrink-0">
           <div>
             {title && <h2 className="text-lg font-semibold text-brand-textHeading">{title}</h2>}
             {description && <p className="text-sm text-brand-textMuted mt-0.5">{description}</p>}
@@ -119,12 +128,17 @@ export function DataTable<T>({
                 />
               </div>
             )}
-            {headerAction}
+            {headerAction != null && <div className="shrink-0">{headerAction}</div>}
           </div>
         </div>
       )}
 
-      <div className="overflow-x-auto">
+      <div
+        className={clsx(
+          'overflow-x-auto',
+          fillHeight && 'flex-1 min-h-0 overflow-auto'
+        )}
+      >
         {isLoading ? (
           <div className="p-4 space-y-3">
             {[1, 2, 3, 4, 5].map((i) => (
@@ -246,7 +260,7 @@ export function DataTable<T>({
       </div>
 
       {!isLoading && filteredData.length > 0 && (
-        <div className="px-4 py-3 border-t border-brand-border flex flex-wrap items-center justify-between gap-2 bg-brand-divider/30">
+        <div className="px-4 py-3 border-t border-brand-border flex flex-wrap items-center justify-between gap-2 bg-brand-divider/30 shrink-0">
           <div className="flex items-center gap-2 text-sm text-brand-textMuted">
             <span>
               Showing {filteredData.length === 0 ? 0 : start + 1}–{Math.min(start + pageSize, filteredData.length)} of {filteredData.length}

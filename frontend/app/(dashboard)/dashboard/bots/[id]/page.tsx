@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useBot, useBots } from '@/hooks/useBots';
+import { useKnowledge } from '@/hooks/useKnowledge';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -11,7 +12,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { TONE_OPTIONS } from '@/lib/constants';
 import toast from 'react-hot-toast';
 import { getErrorMessage } from '@/lib/api';
-import { ArrowLeft, Code } from 'lucide-react';
+import { ArrowLeft, Code, BookOpen } from 'lucide-react';
 
 export default function BotEditPage() {
   const params = useParams();
@@ -19,9 +20,11 @@ export default function BotEditPage() {
   const id = params.id as string;
   const { bot, isLoading, isError, refetch } = useBot(id);
   const { updateBot, deleteBot } = useBots();
+  const { sources, isLoading: sourcesLoading } = useKnowledge();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [tone, setTone] = useState('professional');
+  const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>([]);
   const [origin, setOrigin] = useState('');
 
   useEffect(() => {
@@ -33,13 +36,24 @@ export default function BotEditPage() {
       setName(bot.name);
       setDescription(bot.description);
       setTone(bot.tone);
+      setSelectedSourceIds(bot.assignedSourceIds ?? []);
     }
   }, [bot]);
 
+  const toggleSource = (sourceId: string) => {
+    setSelectedSourceIds((prev) =>
+      prev.includes(sourceId) ? prev.filter((s) => s !== sourceId) : [...prev, sourceId]
+    );
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (selectedSourceIds.length === 0) {
+      toast.error('Select at least one knowledge base');
+      return;
+    }
     updateBot.mutate(
-      { id, name, description, tone },
+      { id, name, description, tone, assignedSourceIds: selectedSourceIds },
       {
         onSuccess: () => toast.success('Bot updated'),
         onError: (err) => toast.error(getErrorMessage(err)),
@@ -133,9 +147,7 @@ export default function BotEditPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-brand-text mb-1">
-                Tone
-              </label>
+              <label className="block text-sm font-medium text-brand-text mb-1">Tone</label>
               <select
                 value={tone}
                 onChange={(e) => setTone(e.target.value)}
@@ -148,8 +160,51 @@ export default function BotEditPage() {
                 ))}
               </select>
             </div>
+            <div>
+              <label className="block text-sm font-medium text-brand-text mb-1">
+                Knowledge base <span className="text-brand-error">*</span>
+              </label>
+              <p className="text-xs text-brand-textMuted mb-2">Select at least one document this bot will use.</p>
+              {sourcesLoading ? (
+                <p className="text-sm text-brand-textMuted">Loading…</p>
+              ) : sources.length === 0 ? (
+                <div className="rounded-lg border border-brand-borderLight bg-brand-sidebar/50 p-4 text-center">
+                  <BookOpen className="w-8 h-8 mx-auto text-brand-textMuted mb-2" />
+                  <p className="text-sm text-brand-textMuted">No documents in Knowledge Base yet.</p>
+                  <Link href="/dashboard/knowledge" className="text-sm text-brand-primary hover:underline mt-1 inline-block">
+                    Upload documents first →
+                  </Link>
+                </div>
+              ) : (
+                <div className="rounded-lg border border-brand-borderLight bg-brand-sidebar max-h-40 overflow-y-auto space-y-2 p-2">
+                  {sources.map((s) => (
+                    <label
+                      key={s.id}
+                      className="flex items-center gap-2 cursor-pointer hover:bg-brand-bgCardHover rounded px-2 py-1.5"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedSourceIds.includes(s.id)}
+                        onChange={() => toggleSource(s.id)}
+                        className="rounded border-brand-borderLight text-brand-primary focus:ring-brand-primary"
+                      />
+                      <span className="text-sm text-brand-text truncate flex-1">
+                        {s.sourceMeta?.filename || s.sourceMeta?.url || s.sourceType}
+                      </span>
+                      <span className="text-xs text-brand-textMuted">{s.chunksCount} chunks</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+              {sources.length > 0 && selectedSourceIds.length === 0 && (
+                <p className="text-xs text-brand-error mt-1">Select at least one knowledge base.</p>
+              )}
+            </div>
             <div className="flex gap-2 pt-2">
-              <Button type="submit" disabled={updateBot.isPending}>
+              <Button
+                type="submit"
+                disabled={updateBot.isPending || sources.length === 0 || selectedSourceIds.length === 0}
+              >
                 {updateBot.isPending ? 'Saving…' : 'Save changes'}
               </Button>
               <Link href="/dashboard/bots">
@@ -195,7 +250,7 @@ export default function BotEditPage() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-brand-textMuted mb-4">
-            Deleting this bot will remove all its knowledge base content and chat history. This cannot be undone.
+            Deleting this bot will remove its chat history. Assigned knowledge documents stay in Knowledge Base. This cannot be undone.
           </p>
           <Button variant="danger" onClick={handleDelete} disabled={deleteBot.isPending}>
             {deleteBot.isPending ? 'Deleting…' : 'Delete bot'}

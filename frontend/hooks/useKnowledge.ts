@@ -1,35 +1,63 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/lib/api';
+import { api, getApiUrl } from '@/lib/api';
+
+export interface AssignedBot {
+  id: string;
+  name: string;
+}
 
 export interface KnowledgeSource {
-  sourceId: string;
+  id: string;
   sourceType: string;
   sourceMeta?: { filename?: string; url?: string };
   chunksCount: number;
+  createdAt: string;
+  assignedBots: AssignedBot[];
 }
 
-export function useKnowledge(botId: string | null) {
+export function useKnowledge() {
   const queryClient = useQueryClient();
   const { data: sources = [], isLoading, isError, refetch } = useQuery({
-    queryKey: ['knowledge', botId],
+    queryKey: ['knowledge'],
     queryFn: async (): Promise<KnowledgeSource[]> => {
-      if (!botId) return [];
-      const { data } = await api.get<{ data: { sources: KnowledgeSource[] } }>(`/knowledge/${botId}`);
+      const { data } = await api.get<{ data: { sources: KnowledgeSource[] } }>('/knowledge');
       return data.data.sources;
     },
-    enabled: !!botId,
+  });
+
+  const uploadSource = useMutation({
+    mutationFn: async (payload: { type: 'pdf'; file: File } | { type: 'text'; text: string } | { type: 'url'; url: string }) => {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('aivora_token') : null;
+      const API_URL = getApiUrl();
+      if (payload.type === 'pdf') {
+        const form = new FormData();
+        form.append('file', payload.file);
+        const res = await fetch(`${API_URL}/api/knowledge/upload`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: form,
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Upload failed');
+        return data;
+      }
+      const body = payload.type === 'text'
+        ? { type: 'text', text: payload.text }
+        : { type: 'url', url: payload.url };
+      const { data } = await api.post<{ data: { source: KnowledgeSource } }>('/knowledge/upload', body);
+      return data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['knowledge'] }),
   });
 
   const deleteSource = useMutation({
-    mutationFn: async ({ botId, sourceId }: { botId: string; sourceId: string }) => {
-      await api.delete(`/knowledge/${botId}/source/${sourceId}`);
+    mutationFn: async (sourceId: string) => {
+      await api.delete(`/knowledge/source/${sourceId}`);
     },
-    onSuccess: (_, { botId }) => {
-      queryClient.invalidateQueries({ queryKey: ['knowledge', botId] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['knowledge'] }),
   });
 
-  return { sources, isLoading, isError, refetch, deleteSource };
+  return { sources, isLoading, isError, refetch, uploadSource, deleteSource };
 }

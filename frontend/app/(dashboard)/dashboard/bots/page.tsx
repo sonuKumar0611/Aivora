@@ -90,13 +90,21 @@ export default function BotsPage() {
         open={showCreate}
         onClose={() => setShowCreate(false)}
         onSubmit={(body) => {
-          createBot.mutate(body, {
-            onSuccess: () => {
-              setShowCreate(false);
-              toast.success('Bot created');
+          createBot.mutate(
+            {
+              name: body.name,
+              description: body.description,
+              tone: body.tone,
+              assignedSourceIds: body.assignedSourceIds,
             },
-            onError: (err) => toast.error(getErrorMessage(err)),
-          });
+            {
+              onSuccess: () => {
+                setShowCreate(false);
+                toast.success('Bot created');
+              },
+              onError: (err) => toast.error(getErrorMessage(err)),
+            }
+          );
         }}
         isLoading={createBot.isPending}
       />

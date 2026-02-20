@@ -1,4 +1,5 @@
 import { KnowledgeChunk } from '../models/KnowledgeChunk';
+import { Bot } from '../models/Bot';
 import mongoose from 'mongoose';
 
 /**
@@ -19,14 +20,23 @@ function cosineSimilarity(a: number[], b: number[]): number {
 }
 
 /**
- * Find top-k knowledge chunks by vector similarity (app-side, no Atlas Vector Search required).
+ * Find top-k knowledge chunks by vector similarity.
+ * Uses the bot's assigned knowledge sources (assignedSourceIds).
  */
 export async function findSimilarChunks(
   botId: mongoose.Types.ObjectId,
   queryEmbedding: number[],
   k: number = 5
 ): Promise<{ text: string }[]> {
-  const chunks = await KnowledgeChunk.find({ botId }).select('embedding text').lean();
+  const bot = await Bot.findById(botId).select('assignedSourceIds').lean();
+  if (!bot || !bot.assignedSourceIds?.length) return [];
+
+  const chunks = await KnowledgeChunk.find({
+    sourceId: { $in: bot.assignedSourceIds },
+  })
+    .select('embedding text')
+    .lean();
+
   if (chunks.length === 0) return [];
 
   const withScore = chunks.map((c) => ({
