@@ -18,5 +18,9 @@ router.post('/api-keys', settingsController.createApiKey);
 router.delete('/api-keys/:id', settingsController.deleteApiKey);
 
 router.get('/team', settingsController.listTeamMembers);
+router.post('/team', settingsController.inviteMember);
+router.post('/team/:id/resend-invite', settingsController.resendInvite);
+router.put('/team/:id', settingsController.updateMember);
+router.delete('/team/:id', settingsController.removeOrSuspendMember);
 
 export default router;

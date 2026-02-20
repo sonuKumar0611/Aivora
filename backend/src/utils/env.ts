@@ -10,6 +10,8 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 characters'),
   OPENAI_API_KEY: z.string().optional(), // required only for knowledge/chat
   FRONTEND_URL: z.string().url().default('http://localhost:3000'),
+  EMAIL_SENDER: z.string().email().optional(),
+  GMAIL_APP_PASSWORD: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

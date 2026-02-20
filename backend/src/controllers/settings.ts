@@ -1,4 +1,5 @@
 import { Response, NextFunction } from 'express';
+import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { User } from '../models/User';
@@ -7,6 +8,8 @@ import { ApiKey, encryptApiKey } from '../models/ApiKey';
 import { ApiError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth';
 import type { UserRole } from '../models/User';
+import { sendInviteEmail } from '../services/email';
+import { env } from '../utils/env';
 
 const ROLES_HIGHER_UPS: UserRole[] = ['owner', 'admin'];
 
@@ -320,7 +323,7 @@ export async function listTeamMembers(req: AuthRequest, res: Response, next: Nex
       throw new ApiError('No organization associated with your account', 400);
     }
     const members = await User.find({ organizationId: u.organizationId })
-      .select('email displayName role createdAt')
+      .select('email displayName role status createdAt updatedAt invitedAt')
       .sort({ createdAt: 1 })
       .lean();
     res.json({
@@ -330,10 +333,248 @@ export async function listTeamMembers(req: AuthRequest, res: Response, next: Nex
           email: m.email,
           displayName: (m as { displayName?: string }).displayName ?? '',
           role: (m as { role?: string }).role ?? 'member',
-          createdAt: m.createdAt,
+          status: (m as { status?: string }).status ?? 'active',
+          createdAt: (m as { createdAt: Date }).createdAt,
+          updatedAt: (m as { updatedAt?: Date }).updatedAt ?? (m as { createdAt: Date }).createdAt,
+          invitedAt: (m as { invitedAt?: Date }).invitedAt,
         })),
       },
       message: 'OK',
+    });
+  } catch (err) {
+    if (err instanceof ApiError) {
+      res.status(err.statusCode ?? 500).json({ error: err.name, message: err.message });
+      return;
+    }
+    next(err);
+  }
+}
+
+const inviteMemberSchema = z.object({
+  email: z.string().email('Invalid email'),
+  displayName: z.string().max(100).optional(),
+  role: z.enum(['admin', 'member', 'viewer']).default('member'),
+});
+
+const INVITE_TOKEN_EXPIRY_DAYS = 7;
+
+export async function inviteMember(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    if (!canAccessHigherUps(req)) {
+      throw new ApiError('Only owners and admins can invite members', 403);
+    }
+    const inviter = req.user!;
+    if (!inviter.organizationId) {
+      throw new ApiError('No organization associated with your account', 400);
+    }
+    const body = inviteMemberSchema.parse(req.body);
+    const email = body.email.toLowerCase().trim();
+    const existing = await User.findOne({ email });
+    if (existing) {
+      if (existing.organizationId?.toString() === inviter.organizationId.toString()) {
+        throw new ApiError('This user is already in your organization', 400);
+      }
+      throw new ApiError('Email already registered to another organization', 400);
+    }
+    const org = await Organization.findById(inviter.organizationId);
+    if (!org) {
+      throw new ApiError('Organization not found', 404);
+    }
+    const tempPassword = crypto.randomBytes(8).toString('base64').replace(/[+/=]/g, (c) => ({ '+': 'x', '/': 'y', '=': '' }[c] ?? '')).slice(0, 12);
+    const hashed = await bcrypt.hash(tempPassword, 12);
+    const inviteToken = crypto.randomBytes(32).toString('hex');
+    const inviteTokenExpiresAt = new Date(Date.now() + INVITE_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
+    const member = await User.create({
+      email,
+      password: hashed,
+      role: body.role,
+      organizationId: inviter.organizationId,
+      displayName: body.displayName?.trim() ?? '',
+      status: 'pending_invite',
+      inviteToken,
+      inviteTokenExpiresAt,
+      invitedAt: new Date(),
+      invitedBy: inviter.id,
+    });
+    const frontendUrl = env.FRONTEND_URL.replace(/\/$/, '');
+    const acceptInviteUrl = `${frontendUrl}/accept-invite?token=${encodeURIComponent(inviteToken)}`;
+    await sendInviteEmail({
+      to: email,
+      inviterName: (inviter.displayName ?? inviter.email) || 'A team admin',
+      organizationName: org.name,
+      tempPassword,
+      acceptInviteUrl,
+    });
+    res.status(201).json({
+      data: {
+        member: {
+          id: member._id.toString(),
+          email: member.email,
+          displayName: (member as { displayName?: string }).displayName ?? '',
+          role: (member as { role?: string }).role ?? 'member',
+          status: 'pending_invite',
+          createdAt: member.createdAt,
+          updatedAt: member.updatedAt,
+          invitedAt: member.invitedAt,
+        },
+      },
+      message: 'Invitation sent',
+    });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: 'Validation error', message: err.errors[0].message });
+      return;
+    }
+    if (err instanceof ApiError) {
+      res.status(err.statusCode ?? 500).json({ error: err.name, message: err.message });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function resendInvite(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    if (!canAccessHigherUps(req)) {
+      throw new ApiError('Only owners and admins can resend invites', 403);
+    }
+    const u = req.user!;
+    if (!u.organizationId) {
+      throw new ApiError('No organization associated with your account', 400);
+    }
+    const memberId = req.params.id;
+    const member = await User.findOne({
+      _id: memberId,
+      organizationId: u.organizationId,
+    }).select('+inviteToken +inviteTokenExpiresAt email displayName status');
+    if (!member) {
+      throw new ApiError('Member not found', 404);
+    }
+    const m = member as { status?: string; inviteToken?: string; inviteTokenExpiresAt?: Date };
+    if (m.status !== 'pending_invite') {
+      throw new ApiError('User has already accepted the invite', 400);
+    }
+    const tempPassword = crypto.randomBytes(8).toString('base64').replace(/[+/=]/g, (c) => ({ '+': 'x', '/': 'y', '=': '' }[c] ?? '')).slice(0, 12);
+    const hashed = await bcrypt.hash(tempPassword, 12);
+    member.password = hashed;
+    const inviteToken = crypto.randomBytes(32).toString('hex');
+    (member as { inviteToken?: string }).inviteToken = inviteToken;
+    (member as { inviteTokenExpiresAt?: Date }).inviteTokenExpiresAt = new Date(Date.now() + INVITE_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
+    await member.save();
+    const org = await Organization.findById(u.organizationId);
+    const frontendUrl = env.FRONTEND_URL.replace(/\/$/, '');
+    const acceptInviteUrl = `${frontendUrl}/accept-invite?token=${encodeURIComponent(inviteToken)}`;
+    await sendInviteEmail({
+      to: member.email,
+      inviterName: (u.displayName ?? u.email) || 'A team admin',
+      organizationName: org?.name ?? 'Your organization',
+      tempPassword,
+      acceptInviteUrl,
+    });
+    res.json({
+      data: { ok: true },
+      message: 'Invitation resent',
+    });
+  } catch (err) {
+    if (err instanceof ApiError) {
+      res.status(err.statusCode ?? 500).json({ error: err.name, message: err.message });
+      return;
+    }
+    next(err);
+  }
+}
+
+const updateMemberSchema = z.object({
+  displayName: z.string().max(100).optional(),
+  role: z.enum(['admin', 'member', 'viewer']).optional(),
+});
+
+export async function updateMember(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    if (!canAccessHigherUps(req)) {
+      throw new ApiError('Only owners and admins can update members', 403);
+    }
+    const u = req.user!;
+    if (!u.organizationId) {
+      throw new ApiError('No organization associated with your account', 400);
+    }
+    const memberId = req.params.id;
+    const member = await User.findOne({
+      _id: memberId,
+      organizationId: u.organizationId,
+    });
+    if (!member) {
+      throw new ApiError('Member not found', 404);
+    }
+    if ((member as { role?: string }).role === 'owner') {
+      throw new ApiError('Cannot change owner details', 403);
+    }
+    const body = updateMemberSchema.parse(req.body);
+    if (body.displayName !== undefined) (member as { displayName?: string }).displayName = body.displayName;
+    if (body.role !== undefined) (member as { role?: string }).role = body.role;
+    await member.save();
+    res.json({
+      data: {
+        member: {
+          id: member._id.toString(),
+          email: member.email,
+          displayName: (member as { displayName?: string }).displayName ?? '',
+          role: (member as { role?: string }).role ?? 'member',
+          status: (member as { status?: string }).status ?? 'active',
+          createdAt: member.createdAt,
+          updatedAt: member.updatedAt,
+          invitedAt: (member as { invitedAt?: Date }).invitedAt,
+        },
+      },
+      message: 'Member updated',
+    });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: 'Validation error', message: err.errors[0].message });
+      return;
+    }
+    if (err instanceof ApiError) {
+      res.status(err.statusCode ?? 500).json({ error: err.name, message: err.message });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function removeOrSuspendMember(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    if (!canAccessHigherUps(req)) {
+      throw new ApiError('Only owners and admins can remove or suspend members', 403);
+    }
+    const u = req.user!;
+    if (!u.organizationId) {
+      throw new ApiError('No organization associated with your account', 400);
+    }
+    const memberId = req.params.id;
+    const member = await User.findOne({
+      _id: memberId,
+      organizationId: u.organizationId,
+    });
+    if (!member) {
+      throw new ApiError('Member not found', 404);
+    }
+    const m = member as { role?: string; status?: string };
+    if (m.role === 'owner') {
+      throw new ApiError('Cannot remove or suspend the owner', 403);
+    }
+    if (m.status === 'pending_invite') {
+      await User.deleteOne({ _id: memberId });
+      res.json({
+        data: { removed: true, wasPending: true },
+        message: 'Invite removed',
+      });
+      return;
+    }
+    (member as { status?: string }).status = 'suspended';
+    await member.save();
+    res.json({
+      data: { removed: false, suspended: true },
+      message: 'Member suspended',
     });
   } catch (err) {
     if (err instanceof ApiError) {

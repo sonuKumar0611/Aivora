@@ -7,7 +7,7 @@ import { PasswordInput } from '@/components/ui/PasswordInput';
 import { useAuth } from '@/hooks/useAuth';
 import { useOrganization, useProfile, useApiKeys, useTeamMembers } from '@/hooks/useSettings';
 import { getErrorMessage } from '@/lib/api';
-import type { UserRole, ApiKeyProvider } from '@/lib/api';
+import type { UserRole, ApiKeyProvider, TeamMember, TeamMemberStatus } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { clsx } from 'clsx';
 import {
@@ -23,10 +23,15 @@ import {
   Pencil,
   Check,
   Sparkles,
+  Send,
+  UserX,
+  X,
 } from 'lucide-react';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { DataTable } from '@/components/ui/DataTable';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 const INPUT_CLASS =
   'w-full rounded-lg border border-brand-borderLight bg-brand-sidebar px-3 py-2.5 text-brand-text placeholder-brand-textDisabled transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-0 focus:ring-offset-transparent disabled:opacity-60';
@@ -201,19 +206,199 @@ function OrganizationTab() {
   );
 }
 
-function TeamTab() {
-  const { members, isLoading, isError, refetch } = useTeamMembers();
+function formatDate(s: string) {
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
 
-  if (isLoading) {
-    return (
-      <Card className="flex min-h-0 flex-1 flex-col">
-        <CardHeader><Skeleton className="h-5 w-32" /></CardHeader>
-        <CardContent className="flex-1">
-          <Skeleton className="h-24 w-full" />
-        </CardContent>
-      </Card>
-    );
+function statusLabel(status: TeamMemberStatus): string {
+  switch (status) {
+    case 'pending_invite':
+      return 'Request Pending';
+    case 'active':
+      return 'Active';
+    case 'suspended':
+      return 'Suspended';
+    default:
+      return status;
   }
+}
+
+function TeamTab() {
+  const {
+    members,
+    isLoading,
+    isError,
+    refetch,
+    inviteUser,
+    resendInvite,
+    updateMember,
+    removeOrSuspendMember,
+  } = useTeamMembers();
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteDisplayName, setInviteDisplayName] = useState('');
+  const [inviteRole, setInviteRole] = useState<'admin' | 'member' | 'viewer'>('member');
+  const [editMember, setEditMember] = useState<TeamMember | null>(null);
+  const [editDisplayName, setEditDisplayName] = useState('');
+  const [editRole, setEditRole] = useState<'admin' | 'member' | 'viewer'>('member');
+  const [removeMember, setRemoveMember] = useState<TeamMember | null>(null);
+
+  useEffect(() => {
+    if (editMember) {
+      setEditDisplayName(editMember.displayName || '');
+      setEditRole(editMember.role === 'owner' ? 'admin' : (editMember.role as 'admin' | 'member' | 'viewer'));
+    }
+  }, [editMember]);
+
+  const teamColumns = [
+    {
+      id: 'name',
+      label: 'User name',
+      render: (row: TeamMember) => (
+        <span className="font-medium text-brand-textHeading">{row.displayName || row.email || '—'}</span>
+      ),
+    },
+    {
+      id: 'role',
+      label: 'Role',
+      render: (row: TeamMember) => (
+        <span className="capitalize text-brand-textMuted">{row.role}</span>
+      ),
+    },
+    {
+      id: 'email',
+      label: 'Email',
+      render: (row: TeamMember) => <span className="text-brand-text">{row.email}</span>,
+    },
+    {
+      id: 'status',
+      label: 'Status',
+      render: (row: TeamMember) => {
+        const status = row.status;
+        const isPending = status === 'pending_invite';
+        const isActive = status === 'active';
+        const isSuspended = status === 'suspended';
+        return (
+          <span
+            className={clsx(
+              'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+              isPending && 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
+              isActive && 'bg-green-500/15 text-green-600 dark:text-green-400',
+              isSuspended && 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+            )}
+          >
+            {statusLabel(status)}
+          </span>
+        );
+      },
+    },
+    {
+      id: 'startDate',
+      label: 'Start date',
+      render: (row: TeamMember) => <span className="text-brand-textMuted text-sm">{formatDate(row.invitedAt || row.createdAt)}</span>,
+    },
+    {
+      id: 'updatedAt',
+      label: 'Last updated',
+      render: (row: TeamMember) => <span className="text-brand-textMuted text-sm">{formatDate(row.updatedAt)}</span>,
+    },
+    {
+      id: 'actions',
+      label: 'Actions',
+      headerClassName: 'text-right',
+      cellClassName: 'text-right',
+      render: (row: TeamMember) => (
+        <div className="flex items-center justify-end gap-1">
+          {row.status === 'pending_invite' && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => resendInvite.mutate(row.id)}
+              disabled={resendInvite.isPending}
+              title="Resend invite"
+              className="!p-2"
+            >
+              {resendInvite.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setEditMember(row)}
+            title="Edit user info"
+            className="!p-2"
+          >
+            <Pencil className="w-4 h-4" />
+          </Button>
+          {row.role !== 'owner' && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setRemoveMember(row)}
+              title={row.status === 'pending_invite' ? 'Remove invite' : 'Remove or suspend user'}
+              className="!p-2 text-brand-error hover:bg-brand-error/10 hover:text-brand-error"
+            >
+              <UserX className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
+      ),
+    },
+  ];
+
+  const handleInviteSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const email = inviteEmail.trim().toLowerCase();
+    if (!email) {
+      toast.error('Email is required');
+      return;
+    }
+    inviteUser.mutate(
+      { email, displayName: inviteDisplayName.trim() || undefined, role: inviteRole },
+      {
+        onSuccess: () => {
+          toast.success('Invitation sent. They will receive an email with a link to accept.');
+          setInviteOpen(false);
+          setInviteEmail('');
+          setInviteDisplayName('');
+          setInviteRole('member');
+        },
+        onError: (err) => toast.error(getErrorMessage(err)),
+      }
+    );
+  };
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editMember) return;
+    updateMember.mutate(
+      {
+        id: editMember.id,
+        body: { displayName: editDisplayName.trim() || undefined, role: editMember.role === 'owner' ? undefined : editRole },
+      },
+      {
+        onSuccess: () => {
+          toast.success('Member updated');
+          setEditMember(null);
+        },
+        onError: (err) => toast.error(getErrorMessage(err)),
+      }
+    );
+  };
+
+  const handleRemoveConfirm = () => {
+    if (!removeMember) return;
+    const wasPending = removeMember.status === 'pending_invite';
+    removeOrSuspendMember.mutate(removeMember.id, {
+      onSuccess: () => {
+        toast.success(wasPending ? 'Invite removed' : 'Member suspended');
+        setRemoveMember(null);
+      },
+      onError: (err) => toast.error(getErrorMessage(err)),
+    });
+  };
+
   if (isError) {
     return (
       <Card className="flex min-h-0 flex-1 flex-col">
@@ -225,31 +410,203 @@ function TeamTab() {
   }
 
   return (
-    <Card className="flex min-h-0 flex-1 flex-col">
-      <CardHeader>
-        <h2 className="font-semibold text-brand-textHeading">Team members</h2>
-        <p className="mt-1 text-sm text-brand-textMuted">People in your organization. Invites can be added later.</p>
-      </CardHeader>
-      <CardContent className="flex-1 overflow-auto">
-        <ul className="divide-y divide-brand-border">
-          {members.length === 0 ? (
-            <li className="py-4 text-sm text-brand-textMuted">No other members yet.</li>
-          ) : (
-            members.map((m) => (
-              <li key={m.id} className="py-3 flex items-center justify-between gap-4">
+    <>
+      <div className="flex-1 min-h-0 flex flex-col">
+        <DataTable<TeamMember>
+          fillHeight
+          title="Team members"
+          description="Manage who has access to your workspace."
+          searchPlaceholder="Search by name or email"
+          columns={teamColumns}
+          data={members}
+          getRowId={(row) => row.id}
+          getSearchableText={(row) => `${row.displayName ?? ''} ${row.email}`}
+          isLoading={isLoading}
+          emptyMessage={
+            <EmptyState
+              icon={<Users className="w-10 h-10 mx-auto" />}
+              title="No team members yet"
+              description="Invite people to your organization. They will receive an email with a link to set their password and join."
+              action={{ label: 'Invite user', onClick: () => setInviteOpen(true) }}
+            />
+          }
+          headerAction={
+            <Button variant="secondary" size="sm" onClick={() => setInviteOpen(true)}>
+              <Plus className="w-4 h-4" />
+              Invite
+            </Button>
+          }
+        />
+      </div>
+
+      {inviteOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
+          onClick={() => setInviteOpen(false)}
+        >
+          <Card
+            className="w-full max-w-md shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <CardHeader className="flex flex-row items-center justify-between shrink-0">
+              <h2 className="text-lg font-semibold text-brand-textHeading">Invite user</h2>
+              <button
+                type="button"
+                onClick={() => setInviteOpen(false)}
+                className="p-1 rounded text-brand-textMuted hover:text-brand-text"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleInviteSubmit} className="space-y-4">
                 <div>
-                  <p className="font-medium text-brand-textHeading">{m.displayName || m.email}</p>
-                  <p className="text-sm text-brand-textMuted">{m.email}</p>
+                  <label htmlFor="invite-email" className={LABEL_CLASS}>Email <span className="text-brand-error">*</span></label>
+                  <input
+                    id="invite-email"
+                    type="email"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    placeholder="colleague@example.com"
+                    className={INPUT_CLASS}
+                    required
+                  />
                 </div>
-                <span className="text-xs font-medium px-2 py-1 rounded bg-brand-divider text-brand-textMuted capitalize">
-                  {m.role}
-                </span>
-              </li>
-            ))
-          )}
-        </ul>
-      </CardContent>
-    </Card>
+                <div>
+                  <label htmlFor="invite-displayName" className={LABEL_CLASS}>Display name</label>
+                  <input
+                    id="invite-displayName"
+                    type="text"
+                    value={inviteDisplayName}
+                    onChange={(e) => setInviteDisplayName(e.target.value)}
+                    placeholder="Optional"
+                    className={INPUT_CLASS}
+                    maxLength={100}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="invite-role" className={LABEL_CLASS}>Role</label>
+                  <select
+                    id="invite-role"
+                    value={inviteRole}
+                    onChange={(e) => setInviteRole(e.target.value as 'admin' | 'member' | 'viewer')}
+                    className={INPUT_CLASS}
+                  >
+                    <option value="member">Member</option>
+                    <option value="admin">Admin</option>
+                    <option value="viewer">Viewer</option>
+                  </select>
+                </div>
+                <p className="text-xs text-brand-textMuted">
+                  An email will be sent with a temporary password and a link to set their own password and join.
+                </p>
+                <div className="flex gap-2 justify-end pt-2">
+                  <Button type="button" variant="secondary" onClick={() => setInviteOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={inviteUser.isPending}>
+                    {inviteUser.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                    Send invite
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {editMember && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
+          onClick={() => setEditMember(null)}
+        >
+          <Card
+            className="w-full max-w-md shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <CardHeader className="flex flex-row items-center justify-between shrink-0">
+              <h2 className="text-lg font-semibold text-brand-textHeading">Edit user info</h2>
+              <button
+                type="button"
+                onClick={() => setEditMember(null)}
+                className="p-1 rounded text-brand-textMuted hover:text-brand-text"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleEditSubmit} className="space-y-4">
+                <div>
+                  <label htmlFor="edit-email" className={LABEL_CLASS}>Email</label>
+                  <input
+                    id="edit-email"
+                    type="email"
+                    value={editMember.email}
+                    readOnly
+                    className={clsx(INPUT_CLASS, 'opacity-80 cursor-not-allowed')}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="edit-displayName" className={LABEL_CLASS}>Display name</label>
+                  <input
+                    id="edit-displayName"
+                    type="text"
+                    value={editDisplayName}
+                    onChange={(e) => setEditDisplayName(e.target.value)}
+                    placeholder="Optional"
+                    className={INPUT_CLASS}
+                    maxLength={100}
+                  />
+                </div>
+                {editMember.role !== 'owner' && (
+                  <div>
+                    <label htmlFor="edit-role" className={LABEL_CLASS}>Role</label>
+                    <select
+                      id="edit-role"
+                      value={editRole}
+                      onChange={(e) => setEditRole(e.target.value as 'admin' | 'member' | 'viewer')}
+                      className={INPUT_CLASS}
+                    >
+                      <option value="member">Member</option>
+                      <option value="admin">Admin</option>
+                      <option value="viewer">Viewer</option>
+                    </select>
+                  </div>
+                )}
+                <div className="flex gap-2 justify-end pt-2">
+                  <Button type="button" variant="secondary" onClick={() => setEditMember(null)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={updateMember.isPending}>
+                    {updateMember.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                    Save
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {removeMember && (
+        <ConfirmModal
+          title={removeMember.status === 'pending_invite' ? 'Remove invite?' : 'Remove or suspend user?'}
+          description={
+            removeMember.status === 'pending_invite'
+              ? `The invitation for ${removeMember.email} will be cancelled. They will not be able to join.`
+              : `${removeMember.displayName || removeMember.email} will be suspended and will no longer be able to sign in.`
+          }
+          confirmLabel={removeMember.status === 'pending_invite' ? 'Remove invite' : 'Suspend'}
+          variant="danger"
+          open={!!removeMember}
+          onClose={() => setRemoveMember(null)}
+          onConfirm={handleRemoveConfirm}
+          isLoading={removeOrSuspendMember.isPending}
+        />
+      )}
+    </>
   );
 }
 

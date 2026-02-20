@@ -120,11 +120,52 @@ export function useApiKeys() {
 }
 
 export function useTeamMembers() {
+  const queryClient = useQueryClient();
   const query = useQuery({
     queryKey: settingsKeys.team,
     queryFn: async () => {
       const { data } = await api.get<{ data: { members: TeamMember[] } }>('/settings/team');
       return data.data.members;
+    },
+  });
+  const inviteUser = useMutation({
+    mutationFn: async (body: { email: string; displayName?: string; role?: 'admin' | 'member' | 'viewer' }) => {
+      const { data } = await api.post<{ data: { member: TeamMember } }>('/settings/team', body);
+      return data.data.member;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: settingsKeys.team });
+    },
+  });
+  const resendInvite = useMutation({
+    mutationFn: async (memberId: string) => {
+      await api.post(`/settings/team/${memberId}/resend-invite`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: settingsKeys.team });
+    },
+  });
+  const updateMember = useMutation({
+    mutationFn: async ({
+      id,
+      body,
+    }: {
+      id: string;
+      body: { displayName?: string; role?: 'admin' | 'member' | 'viewer' };
+    }) => {
+      const { data } = await api.put<{ data: { member: TeamMember } }>(`/settings/team/${id}`, body);
+      return data.data.member;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: settingsKeys.team });
+    },
+  });
+  const removeOrSuspendMember = useMutation({
+    mutationFn: async (memberId: string) => {
+      await api.delete(`/settings/team/${memberId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: settingsKeys.team });
     },
   });
   return {
@@ -133,5 +174,9 @@ export function useTeamMembers() {
     isError: query.isError,
     error: query.error,
     refetch: query.refetch,
+    inviteUser,
+    resendInvite,
+    updateMember,
+    removeOrSuspendMember,
   };
 }

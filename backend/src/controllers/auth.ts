@@ -71,9 +71,18 @@ export async function signup(req: Request, res: Response, next: NextFunction): P
 export async function login(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const body = loginSchema.parse(req.body);
-    const user = await User.findOne({ email: body.email.toLowerCase() }).select('+password role organizationId displayName');
+    const user = await User.findOne({ email: body.email.toLowerCase() }).select('+password role organizationId displayName status');
     if (!user) {
       res.status(401).json({ error: 'Invalid credentials', message: 'Email or password incorrect' });
+      return;
+    }
+    const uStatus = user as { status?: string };
+    if (uStatus.status === 'suspended') {
+      res.status(403).json({ error: 'Account suspended', message: 'Your account has been suspended. Contact your organization admin.' });
+      return;
+    }
+    if (uStatus.status === 'pending_invite') {
+      res.status(403).json({ error: 'Invite pending', message: 'Please accept your invite using the link sent to your email before logging in.' });
       return;
     }
     const match = await bcrypt.compare(body.password, user.password);
@@ -87,15 +96,15 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
       { expiresIn: '7d' }
     );
     const orgId = user.organizationId?.toString() ?? null;
-    const u = user as { role?: string; displayName?: string };
+    const uOut = user as { role?: string; displayName?: string };
     res.json({
       data: {
         user: {
           id: user._id.toString(),
           email: user.email,
-          role: u.role ?? 'owner',
+          role: uOut.role ?? 'owner',
           organizationId: orgId,
-          displayName: u.displayName ?? '',
+          displayName: uOut.displayName ?? '',
         },
         token,
         expiresIn: '7d',
@@ -130,6 +139,64 @@ export async function me(req: AuthRequest, res: Response, next: NextFunction): P
       message: 'OK',
     });
   } catch (err) {
+    next(err);
+  }
+}
+
+const acceptInviteSchema = z.object({
+  token: z.string().min(1, 'Invite token is required'),
+  newPassword: z.string().min(8, 'Password must be at least 8 characters'),
+});
+
+export async function acceptInvite(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const body = acceptInviteSchema.parse(req.body);
+    const user = await User.findOne({
+      inviteToken: body.token,
+      status: 'pending_invite',
+    })
+      .select('+password +inviteToken +inviteTokenExpiresAt')
+      .exec();
+    if (!user) {
+      res.status(400).json({ error: 'Invalid invite', message: 'Invite link is invalid or has expired' });
+      return;
+    }
+    const u = user as { inviteTokenExpiresAt?: Date };
+    if (u.inviteTokenExpiresAt && u.inviteTokenExpiresAt < new Date()) {
+      res.status(400).json({ error: 'Invite expired', message: 'This invite link has expired' });
+      return;
+    }
+    user.password = await bcrypt.hash(body.newPassword, 12);
+    (user as { status?: string }).status = 'active';
+    (user as { inviteToken?: string }).inviteToken = undefined;
+    (user as { inviteTokenExpiresAt?: Date }).inviteTokenExpiresAt = undefined;
+    await user.save();
+    const token = jwt.sign(
+      { userId: user._id.toString(), email: user.email },
+      env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+    const orgId = user.organizationId?.toString() ?? null;
+    const uOut = user as { role?: string; displayName?: string };
+    res.json({
+      data: {
+        user: {
+          id: user._id.toString(),
+          email: user.email,
+          role: uOut.role ?? 'member',
+          organizationId: orgId,
+          displayName: uOut.displayName ?? '',
+        },
+        token,
+        expiresIn: '7d',
+      },
+      message: 'Invite accepted. You are now logged in.',
+    });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: 'Validation error', message: err.errors[0].message });
+      return;
+    }
     next(err);
   }
 }

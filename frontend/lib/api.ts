@@ -95,12 +95,17 @@ export interface ApiKeyItem {
   createdAt: string;
 }
 
+export type TeamMemberStatus = 'pending_invite' | 'active' | 'suspended';
+
 export interface TeamMember {
   id: string;
   email: string;
   displayName: string;
   role: UserRole;
+  status: TeamMemberStatus;
   createdAt: string;
+  updatedAt: string;
+  invitedAt?: string;
 }
 
 export interface AuthData {
