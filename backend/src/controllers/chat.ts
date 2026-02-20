@@ -27,6 +27,14 @@ export async function chat(req: AuthRequest, res: Response, next: NextFunction):
       res.status(404).json({ error: 'Not found', message: 'Bot not found' });
       return;
     }
+    const status = (bot as { status?: string }).status ?? 'draft';
+    if (!req.user && status !== 'published') {
+      res.status(403).json({
+        error: 'Forbidden',
+        message: 'This bot is not published. Publish it in the dashboard to use the embed script.',
+      });
+      return;
+    }
 
     // If authenticated, ensure user owns bot (dashboard). For widget, we allow public by botId only.
     const userId = req.user?.id ? new mongoose.Types.ObjectId(req.user.id) : null;
@@ -41,7 +49,13 @@ export async function chat(req: AuthRequest, res: Response, next: NextFunction):
     const queryEmbedding = await getEmbedding(body.message);
     const similarChunks = await findSimilarChunks(bot._id, queryEmbedding, 5);
     const contextTexts = similarChunks.map((c) => c.text);
-    const systemPrompt = await buildSystemPrompt(bot.description, bot.tone, contextTexts);
+    const customPrompt = (bot as { systemPrompt?: string }).systemPrompt;
+    const systemPrompt = await buildSystemPrompt(
+      bot.description,
+      bot.tone,
+      contextTexts,
+      customPrompt
+    );
 
     let chatDoc = null;
     if (body.conversationId) {

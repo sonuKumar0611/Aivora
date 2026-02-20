@@ -67,7 +67,10 @@ export interface Bot {
   name: string;
   description: string;
   tone: string;
+  botType?: string;
+  systemPrompt?: string;
   assignedSourceIds: string[];
+  status: 'draft' | 'published';
   createdAt: string;
   updatedAt: string;
 }

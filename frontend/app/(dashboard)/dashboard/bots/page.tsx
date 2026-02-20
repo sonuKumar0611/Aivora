@@ -9,14 +9,10 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Bot, Plus, Search } from 'lucide-react';
-import { CreateBotModal } from '@/components/bots/CreateBotModal';
 import { BotCard } from '@/components/bots/BotCard';
-import toast from 'react-hot-toast';
-import { getErrorMessage } from '@/lib/api';
 
 export default function BotsPage() {
-  const { bots, isLoading, isError, refetch, createBot } = useBots();
-  const [showCreate, setShowCreate] = useState(false);
+  const { bots, isLoading, isError, refetch } = useBots();
   const [search, setSearch] = useState('');
 
   const filteredBots = useMemo(() => {
@@ -39,10 +35,12 @@ export default function BotsPage() {
             Create and manage your support bots
           </p>
         </div>
-        <Button onClick={() => setShowCreate(true)} className="transition-all hover:scale-[1.02]">
-          <Plus className="w-4 h-4 mr-2 inline" />
-          New bot
-        </Button>
+        <Link href="/dashboard/bots/new">
+          <Button className="transition-all hover:scale-[1.02]">
+            <Plus className="w-4 h-4 mr-2 inline" />
+            New bot
+          </Button>
+        </Link>
       </div>
 
       <div className="flex-1 min-h-0 flex flex-col mt-6">
@@ -74,7 +72,7 @@ export default function BotsPage() {
                 icon={<Bot className="w-12 h-12" />}
                 title="No bots yet"
                 description="Create a bot to get started. Set its name, business description, and tone."
-                action={{ label: 'Create bot', onClick: () => setShowCreate(true) }}
+                action={{ label: 'Create bot', onClick: () => window.location.assign('/dashboard/bots/new') }}
               />
             </CardContent>
           </Card>
@@ -104,6 +102,7 @@ export default function BotsPage() {
                       name={bot.name}
                       tone={bot.tone}
                       description={bot.description ?? ''}
+                      status={bot.status ?? 'draft'}
                     />
                   ))}
                 </div>
@@ -113,28 +112,6 @@ export default function BotsPage() {
         )}
       </div>
 
-      <CreateBotModal
-        open={showCreate}
-        onClose={() => setShowCreate(false)}
-        onSubmit={(body) => {
-          createBot.mutate(
-            {
-              name: body.name,
-              description: body.description,
-              tone: body.tone,
-              assignedSourceIds: body.assignedSourceIds,
-            },
-            {
-              onSuccess: () => {
-                setShowCreate(false);
-                toast.success('Bot created');
-              },
-              onError: (err) => toast.error(getErrorMessage(err)),
-            }
-          );
-        }}
-        isLoading={createBot.isPending}
-      />
     </div>
   );
 }

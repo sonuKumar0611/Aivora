@@ -19,7 +19,15 @@ export function useBots() {
   });
 
   const createBot = useMutation({
-    mutationFn: async (body: { name: string; description: string; tone: string; assignedSourceIds: string[] }) => {
+    mutationFn: async (body: {
+      name: string;
+      description: string;
+      tone: string;
+      botType?: string;
+      systemPrompt?: string;
+      assignedSourceIds?: string[];
+      status?: 'draft' | 'published';
+    }) => {
       const { data } = await api.post<{ data: { bot: Bot } }>('/bots', body);
       return data.data.bot;
     },
@@ -33,13 +41,34 @@ export function useBots() {
     mutationFn: async ({
       id,
       ...body
-    }: { id: string; name?: string; description?: string; tone?: string; assignedSourceIds?: string[] }) => {
+    }: {
+      id: string;
+      name?: string;
+      description?: string;
+      tone?: string;
+      botType?: string;
+      systemPrompt?: string;
+      assignedSourceIds?: string[];
+      status?: 'draft' | 'published';
+    }) => {
       const { data } = await api.put<{ data: { bot: Bot } }>(`/bots/${id}`, body);
       return data.data.bot;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['bots'] });
       queryClient.invalidateQueries({ queryKey: ['knowledge'] });
+      queryClient.invalidateQueries({ queryKey: ['bot', variables.id] });
+    },
+  });
+
+  const publishBot = useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.post<{ data: { bot: Bot } }>(`/bots/${id}/publish`);
+      return data.data.bot;
+    },
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ['bots'] });
+      queryClient.invalidateQueries({ queryKey: ['bot', id] });
     },
   });
 
@@ -50,7 +79,7 @@ export function useBots() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['bots'] }),
   });
 
-  return { bots, isLoading, isError, refetch, createBot, updateBot, deleteBot };
+  return { bots, isLoading, isError, refetch, createBot, updateBot, publishBot, deleteBot };
 }
 
 export function useBot(id: string | null) {

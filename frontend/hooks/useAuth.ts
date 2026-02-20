@@ -8,13 +8,16 @@ import { api, type AuthData, type User } from '@/lib/api';
 export function useAuth() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [hasToken, setHasToken] = useState(false);
+  // null = not yet checked (avoid redirect before reading localStorage)
+  const [hasToken, setHasToken] = useState<boolean | null>(null);
 
   useEffect(() => {
     setHasToken(!!(typeof window !== 'undefined' && localStorage.getItem('aivora_token')));
   }, []);
 
-  const { data: user, isLoading, isError } = useQuery({
+  const tokenChecked = hasToken !== null;
+
+  const { data: user, isLoading: queryLoading, isError } = useQuery({
     queryKey: ['me'],
     queryFn: async () => {
       const { data } = await api.get<{ data: { user: User } }>('/auth/me');
@@ -22,7 +25,7 @@ export function useAuth() {
     },
     retry: false,
     staleTime: 5 * 60 * 1000,
-    enabled: hasToken,
+    enabled: hasToken === true,
   });
 
   const signup = useMutation({
@@ -55,9 +58,12 @@ export function useAuth() {
     router.push('/login');
   };
 
+  // Stay "loading" until we've read the token from localStorage; then while /auth/me is fetching
+  const isLoading = !tokenChecked || (hasToken === true && queryLoading);
+
   return {
     user,
-    isLoading: hasToken ? isLoading : false,
+    isLoading,
     isAuthenticated: !!user,
     isError,
     signup,

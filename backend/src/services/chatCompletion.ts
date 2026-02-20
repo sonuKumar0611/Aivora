@@ -12,15 +12,20 @@ Context:
 export async function buildSystemPrompt(
   businessDescription: string,
   tone: string,
-  contextChunks: string[]
+  contextChunks: string[],
+  customPrompt?: string
 ): Promise<string> {
   const context = contextChunks.length > 0
     ? contextChunks.map((t) => t.trim()).join('\n\n')
     : 'No specific context provided. Answer based on general knowledge and be helpful.';
-  return SYSTEM_PROMPT_TEMPLATE
+  const base = SYSTEM_PROMPT_TEMPLATE
     .replace('{business}', businessDescription)
     .replace('{tone}', tone)
     .replace('{retrieved_chunks}', context);
+  if (customPrompt?.trim()) {
+    return `${customPrompt.trim()}\n\n${base}`;
+  }
+  return base;
 }
 
 export async function getChatCompletion(

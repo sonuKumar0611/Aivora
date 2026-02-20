@@ -5,7 +5,10 @@ export interface IBot extends Document {
   name: string;
   description: string;
   tone: string;
+  botType: string;
+  systemPrompt?: string;
   assignedSourceIds: mongoose.Types.ObjectId[];
+  status: 'draft' | 'published';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -16,7 +19,10 @@ const botSchema = new Schema<IBot>(
     name: { type: String, required: true, trim: true },
     description: { type: String, required: true, trim: true },
     tone: { type: String, required: true, trim: true, default: 'professional' },
+    botType: { type: String, trim: true, default: 'support' },
+    systemPrompt: { type: String, trim: true, default: '' },
     assignedSourceIds: { type: [Schema.Types.ObjectId], ref: 'KnowledgeSource', default: [] },
+    status: { type: String, enum: ['draft', 'published'], default: 'draft' },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
   },

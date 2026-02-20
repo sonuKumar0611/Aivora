@@ -5,3 +5,11 @@ export const TONE_OPTIONS = [
   { value: 'technical', label: 'Technical' },
   { value: 'casual', label: 'Casual' },
 ] as const;
+
+export const BOT_TYPE_OPTIONS = [
+  { value: 'support', label: 'Support' },
+  { value: 'sales', label: 'Sales' },
+  { value: 'faq', label: 'FAQ' },
+  { value: 'onboarding', label: 'Onboarding' },
+  { value: 'custom', label: 'Custom' },
+] as const;

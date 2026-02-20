@@ -12,15 +12,25 @@ interface BotCardProps {
   name: string;
   tone: string;
   description: string;
+  status?: 'draft' | 'published';
 }
 
-export function BotCard({ href, name, tone, description }: BotCardProps) {
+export function BotCard({ href, name, tone, description, status = 'draft' }: BotCardProps) {
   return (
     <Link
       href={href}
       className="block h-full min-h-[160px] animate-in focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 focus-visible:ring-offset-brand-bg rounded-xl overflow-hidden border border-white/10 hover:border-brand-primary/70 hover:shadow-[0_0_0_1px_hsl(var(--primary)_/_0.4)] transition-all duration-200"
     >
       <div className="relative w-full h-full rounded-xl overflow-hidden">
+        <span
+          className={`absolute top-3 right-3 z-20 px-2 py-0.5 rounded text-xs font-medium ${
+            status === 'published'
+              ? 'bg-green-500/20 text-green-600 dark:text-green-400 border border-green-500/30'
+              : 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+          }`}
+        >
+          {status === 'published' ? 'Published' : 'Draft'}
+        </span>
         {/* Liquid ether background – reacts to mouse hover on this card */}
         <div className="absolute inset-0 pointer-events-auto">
           <LiquidEther
