@@ -7,7 +7,28 @@ const LiquidEther = dynamic(() => import('@/components/LiquidEther'), { ssr: fal
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-brand-bg text-brand-text">
+    <div className="min-h-screen bg-brand-bg text-brand-text relative">
+      {/* Full-page LiquidEther background – fixed so it spans entire page top to bottom */}
+      <div className="fixed inset-0 w-full h-full z-0 [contain:paint]" aria-hidden>
+        <LiquidEther
+          colors={['#5227FF', '#FF9FFC', '#B19EEF']}
+          mouseForce={20}
+          cursorSize={100}
+          isViscous
+          viscous={30}
+          iterationsViscous={32}
+          iterationsPoisson={32}
+          resolution={0.5}
+          isBounce={false}
+          autoDemo
+          autoSpeed={0.5}
+          autoIntensity={2.2}
+          takeoverDuration={0.25}
+          autoResumeDelay={3000}
+          autoRampDuration={0.6}
+          className="absolute inset-0 w-full h-full"
+        />
+      </div>
       <header className="absolute top-0 left-0 right-0 z-20 border-b border-white/10 glass">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
@@ -37,31 +58,10 @@ export default function LandingPage() {
         </div>
       </header>
 
-      <main>
+      <main className="relative z-10">
         {/* Hero – full viewport cover */}
         <section className="relative min-h-screen h-screen flex flex-col items-center justify-center overflow-hidden">
-          {/* Canvas layer: explicit z-0, contain paint so repaints don't distort text above */}
-          <div className="absolute inset-0 w-full h-full z-0 [contain:paint]">
-            <LiquidEther
-              colors={['#5227FF', '#FF9FFC', '#B19EEF']}
-              mouseForce={20}
-              cursorSize={100}
-              isViscous
-              viscous={30}
-              iterationsViscous={32}
-              iterationsPoisson={32}
-              resolution={0.5}
-              isBounce={false}
-              autoDemo
-              autoSpeed={0.5}
-              autoIntensity={2.2}
-              takeoverDuration={0.25}
-              autoResumeDelay={3000}
-              autoRampDuration={0.6}
-              className="absolute inset-0 w-full h-full"
-            />
-          </div>
-          {/* Text on its own compositing layer; no box/glass so no visible container */}
+          {/* Text on its own compositing layer; background is full-page fixed above */}
           <div className="relative z-10 max-w-4xl mx-auto px-4 py-20 text-center pointer-events-auto isolate [transform:translateZ(0)] [backface-visibility:hidden]">
             <p className="inline-flex items-center gap-2 rounded-full border border-brand-border bg-brand-bgCard/60 backdrop-blur-sm px-4 py-1.5 text-sm text-brand-textMuted mb-8 animate-fade-in">
               <span className="relative flex h-2 w-2">
