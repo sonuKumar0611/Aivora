@@ -35,14 +35,30 @@ api.interceptors.response.use(
   }
 );
 
+/** Normalize long or technical API key / OpenAI messages to short user-facing text */
+function normalizeApiKeyMessage(message: string): string {
+  if (/incorrect API key|invalid API key|invalid authentication/i.test(message)) {
+    return 'Invalid or expired OpenAI API key. Check Settings.';
+  }
+  if (/openai\.com\/account\/api-keys/i.test(message)) {
+    return 'Invalid or expired OpenAI API key. Check Settings.';
+  }
+  if (/too many requests|rate limit/i.test(message)) {
+    return 'Too many requests. Please try again in a moment.';
+  }
+  return message;
+}
+
 /** Extract user-facing error message from API or axios error */
 export function getErrorMessage(err: unknown): string {
+  let message = 'Something went wrong';
   if (axios.isAxiosError(err)) {
     const d = err.response?.data as { message?: string; error?: string } | undefined;
-    if (d && (d.message || d.error)) return d.message || d.error || 'Something went wrong';
+    if (d && (d.message || d.error)) message = d.message || d.error || message;
+  } else if (err instanceof Error) {
+    message = err.message;
   }
-  if (err instanceof Error) return err.message;
-  return 'Something went wrong';
+  return normalizeApiKeyMessage(message);
 }
 
 export interface ApiResponse<T> {
@@ -51,9 +67,40 @@ export interface ApiResponse<T> {
   message?: string;
 }
 
+export type UserRole = 'owner' | 'admin' | 'member' | 'viewer';
+
 export interface User {
   id: string;
   email: string;
+  role: UserRole;
+  organizationId: string | null;
+  displayName?: string;
+}
+
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  updatedAt: string;
+}
+
+export type ApiKeyProvider = 'openai';
+
+export interface ApiKeyItem {
+  id: string;
+  provider: ApiKeyProvider;
+  label: string;
+  keyPrefix: string;
+  lastUsedAt?: string;
+  createdAt: string;
+}
+
+export interface TeamMember {
+  id: string;
+  email: string;
+  displayName: string;
+  role: UserRole;
+  createdAt: string;
 }
 
 export interface AuthData {

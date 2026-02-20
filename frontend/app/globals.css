@@ -245,6 +245,7 @@ body {
 .aivora-toast-error {
   border-left: 4px solid #F87171 !important;
   color: #FEE2E2 !important;
+  max-width: min(380px, 92vw);
 }
 @keyframes toast-slide-in {
   from {

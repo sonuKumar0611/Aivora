@@ -5,7 +5,7 @@ import { Bot, IBot } from '../models/Bot';
 import { KnowledgeSource } from '../models/KnowledgeSource';
 import { AuthRequest } from '../middleware/auth';
 
-function toBotResponse(bot: IBot | (mongoose.LeanDocument<IBot> & { _id: mongoose.Types.ObjectId })) {
+function toBotResponse(bot: IBot | (Omit<IBot, keyof mongoose.Document> & { _id: mongoose.Types.ObjectId })) {
   const b = bot as IBot & { _id: mongoose.Types.ObjectId };
   return {
     id: b._id.toString(),

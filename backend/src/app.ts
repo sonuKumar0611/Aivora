@@ -9,6 +9,7 @@ import knowledgeRoutes from './routes/knowledge';
 import chatRoutes from './routes/chat';
 import analyticsRoutes from './routes/analytics';
 import newsletterRoutes from './routes/newsletter';
+import settingsRoutes from './routes/settings';
 
 const app = express();
 
@@ -50,6 +51,7 @@ app.use('/api/knowledge', knowledgeRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/newsletter', newsletterRoutes);
+app.use('/api/settings', settingsRoutes);
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

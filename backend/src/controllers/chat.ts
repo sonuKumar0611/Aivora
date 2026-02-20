@@ -4,9 +4,15 @@ import { z } from 'zod';
 import { AuthRequest } from '../middleware/auth';
 import { Bot } from '../models/Bot';
 import { Chat } from '../models/Chat';
-import { getEmbedding } from '../services/openai';
+import { User } from '../models/User';
+import {
+  getEmbedding,
+  getOpenAIKeyForOrganization,
+  resolveOpenAIKey,
+} from '../services/openai';
 import { findSimilarChunks } from '../services/vectorSearch';
 import { buildSystemPrompt, getChatCompletion } from '../services/chatCompletion';
+import { env } from '../utils/env';
 
 const chatSchema = z.object({
   message: z.string().min(1, 'Message is required'),
@@ -46,7 +52,23 @@ export async function chat(req: AuthRequest, res: Response, next: NextFunction):
       }
     }
 
-    const queryEmbedding = await getEmbedding(body.message);
+    // Resolve OpenAI key: env or organization key (from current user or bot owner for widget).
+    let organizationId: string | null = req.user?.organizationId ?? null;
+    if (!organizationId && bot.userId) {
+      const owner = await User.findById(bot.userId).select('organizationId').lean();
+      organizationId = owner?.organizationId?.toString() ?? null;
+    }
+    const orgKey = organizationId ? await getOpenAIKeyForOrganization(organizationId) : null;
+    const openaiKey = resolveOpenAIKey(env.OPENAI_API_KEY, orgKey);
+    if (!openaiKey) {
+      res.status(503).json({
+        error: 'Service unavailable',
+        message: 'Chat service not configured. Add an OpenAI API key in Settings or set OPENAI_API_KEY.',
+      });
+      return;
+    }
+
+    const queryEmbedding = await getEmbedding(body.message, openaiKey);
     const similarChunks = await findSimilarChunks(bot._id, queryEmbedding, 5);
     const contextTexts = similarChunks.map((c) => c.text);
     const customPrompt = (bot as { systemPrompt?: string }).systemPrompt;
@@ -77,10 +99,14 @@ export async function chat(req: AuthRequest, res: Response, next: NextFunction):
       .slice(-20)
       .map((m: { role: string; content: string }) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
 
-    const reply = await getChatCompletion(systemPrompt, [
-      ...historyMessages,
-      { role: 'user', content: body.message },
-    ]);
+    const reply = await getChatCompletion(
+      systemPrompt,
+      [
+        ...historyMessages,
+        { role: 'user', content: body.message },
+      ],
+      openaiKey
+    );
 
     chatDoc.messages.push(
       { role: 'user', content: body.message, timestamp: new Date() },
@@ -101,8 +127,34 @@ export async function chat(req: AuthRequest, res: Response, next: NextFunction):
       res.status(400).json({ error: 'Validation error', message: err.errors[0].message });
       return;
     }
-    if (err instanceof Error && err.message.includes('OPENAI_API_KEY')) {
-      res.status(503).json({ error: 'Service unavailable', message: 'Chat service not configured' });
+    if (err instanceof Error && (err.message.includes('OPENAI_API_KEY') || err.message.includes('not set'))) {
+      res.status(503).json({
+        error: 'Service unavailable',
+        message: 'Chat service not configured. Add an OpenAI API key in Settings or set OPENAI_API_KEY.',
+      });
+      return;
+    }
+    const status = (err as { status?: number }).status;
+    const msg = err instanceof Error ? err.message : '';
+    if (status === 401 || /incorrect API key|invalid API key|invalid authentication/i.test(msg)) {
+      res.status(400).json({
+        error: 'Bad request',
+        message: 'Invalid or expired OpenAI API key. Please check your key in Settings.',
+      });
+      return;
+    }
+    if (status === 403) {
+      res.status(400).json({
+        error: 'Bad request',
+        message: 'OpenAI access denied. Check your API key or plan in Settings.',
+      });
+      return;
+    }
+    if (status === 429) {
+      res.status(503).json({
+        error: 'Service unavailable',
+        message: 'Too many requests. Please try again in a moment.',
+      });
       return;
     }
     next(err);

@@ -30,9 +30,10 @@ export async function buildSystemPrompt(
 
 export async function getChatCompletion(
   systemPrompt: string,
-  messages: { role: 'user' | 'assistant'; content: string }[]
+  messages: { role: 'user' | 'assistant'; content: string }[],
+  apiKey?: string | null
 ): Promise<string> {
-  const openai = getOpenAI();
+  const openai = getOpenAI(apiKey);
   const response = await openai.chat.completions.create({
     model: 'gpt-4o',
     messages: [

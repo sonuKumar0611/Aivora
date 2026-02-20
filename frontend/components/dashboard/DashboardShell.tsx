@@ -43,7 +43,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     <div className="h-screen overflow-hidden flex flex-row bg-brand-bg">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
-        <main className="flex-1 min-h-0 p-6 overflow-auto">{children}</main>
+        <main className="flex min-h-0 flex-1 flex-col overflow-auto p-6">{children}</main>
       </div>
     </div>
   );

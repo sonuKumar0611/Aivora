@@ -5,8 +5,9 @@ import { AuthRequest } from '../middleware/auth';
 import { Bot } from '../models/Bot';
 import { KnowledgeSource } from '../models/KnowledgeSource';
 import { KnowledgeChunk } from '../models/KnowledgeChunk';
-import { getEmbeddings } from '../services/openai';
+import { getEmbeddings, getOpenAIKeyForOrganization, resolveOpenAIKey } from '../services/openai';
 import { ingestPdfAsync, ingestText, ingestUrl } from '../services/ingest';
+import { env } from '../utils/env';
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -56,7 +57,18 @@ export async function uploadKnowledge(req: AuthRequest, res: Response, next: Nex
       return;
     }
 
-    const embeddings = await getEmbeddings(result.chunks);
+    const organizationId = req.user!.organizationId?.toString() ?? null;
+    const orgKey = organizationId ? await getOpenAIKeyForOrganization(organizationId) : null;
+    const openaiKey = resolveOpenAIKey(env.OPENAI_API_KEY, orgKey);
+    if (!openaiKey) {
+      res.status(503).json({
+        error: 'Service unavailable',
+        message: 'Embeddings not configured. Add an OpenAI API key in Settings or set OPENAI_API_KEY.',
+      });
+      return;
+    }
+
+    const embeddings = await getEmbeddings(result.chunks, openaiKey);
     const source = await KnowledgeSource.create({
       userId: new mongoose.Types.ObjectId(userId),
       sourceType: result.sourceType,
@@ -83,8 +95,34 @@ export async function uploadKnowledge(req: AuthRequest, res: Response, next: Nex
       message: 'Knowledge uploaded',
     });
   } catch (err) {
-    if (err instanceof Error && err.message.includes('OPENAI_API_KEY')) {
-      res.status(503).json({ error: 'Service unavailable', message: 'Embeddings service not configured' });
+    if (err instanceof Error && (err.message.includes('OPENAI_API_KEY') || err.message.includes('not set'))) {
+      res.status(503).json({
+        error: 'Service unavailable',
+        message: 'Embeddings not configured. Add an OpenAI API key in Settings or set OPENAI_API_KEY.',
+      });
+      return;
+    }
+    const status = (err as { status?: number }).status;
+    const msg = err instanceof Error ? err.message : '';
+    if (status === 401 || /incorrect API key|invalid API key|invalid authentication/i.test(msg)) {
+      res.status(400).json({
+        error: 'Bad request',
+        message: 'Invalid or expired OpenAI API key. Please check your key in Settings.',
+      });
+      return;
+    }
+    if (status === 403) {
+      res.status(400).json({
+        error: 'Bad request',
+        message: 'OpenAI access denied. Check your API key or plan in Settings.',
+      });
+      return;
+    }
+    if (status === 429) {
+      res.status(503).json({
+        error: 'Service unavailable',
+        message: 'Too many requests. Please try again in a moment.',
+      });
       return;
     }
     next(err);
