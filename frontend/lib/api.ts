@@ -132,3 +132,18 @@ export interface Bot {
   createdAt: string;
   updatedAt: string;
 }
+
+export type IntegrationProvider = 'google_calendar' | 'google_sheets';
+
+export interface IntegrationItem {
+  id: IntegrationProvider;
+  name: string;
+  description: string;
+  category: string;
+  connected: boolean;
+  connectedAt?: string;
+}
+
+export interface IntegrationsResponse {
+  categories: { category: string; integrations: IntegrationItem[] }[];
+}

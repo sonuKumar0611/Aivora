@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authMiddleware } from '../middleware/auth';
+import { authMiddleware, requireRole } from '../middleware/auth';
 import * as settingsController from '../controllers/settings';
 
 const router = Router();
@@ -23,5 +23,9 @@ router.post('/team', settingsController.inviteMember);
 router.post('/team/:id/resend-invite', settingsController.resendInvite);
 router.put('/team/:id', settingsController.updateMember);
 router.delete('/team/:id', settingsController.removeOrSuspendMember);
+
+router.get('/integrations', requireRole(['owner', 'admin']), settingsController.listIntegrations);
+router.post('/integrations/:provider/connect', requireRole(['owner', 'admin']), settingsController.connectIntegration);
+router.delete('/integrations/:provider/disconnect', requireRole(['owner', 'admin']), settingsController.disconnectIntegration);
 
 export default router;

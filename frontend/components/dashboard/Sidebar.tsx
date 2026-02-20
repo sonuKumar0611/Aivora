@@ -12,6 +12,7 @@ import {
   Bot,
   BookOpen,
   Settings,
+  Plug,
   ChevronLeft,
   ChevronRight,
   LogOut,
@@ -20,19 +21,23 @@ import { useAuth } from '@/hooks/useAuth';
 
 const STORAGE_KEY = 'aivora-sidebar-collapsed';
 
-const nav = [
+const navAll = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/dashboard/agents', label: 'My Agents', icon: Bot },
   { href: '/dashboard/knowledge', label: 'Knowledge Base', icon: BookOpen },
+  { href: '/dashboard/integrations', label: 'Integrations', icon: Plug, higherUpsOnly: true },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [borderHovered, setBorderHovered] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  const isHigherUp = user?.role === 'owner' || user?.role === 'admin';
+  const nav = navAll.filter((item) => !('higherUpsOnly' in item && item.higherUpsOnly) || isHigherUp);
 
   useEffect(() => {
     setMounted(true);

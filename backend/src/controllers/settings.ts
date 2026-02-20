@@ -5,6 +5,8 @@ import { z } from 'zod';
 import { User } from '../models/User';
 import { Organization } from '../models/Organization';
 import { ApiKey, encryptApiKey } from '../models/ApiKey';
+import { OrganizationIntegration } from '../models/OrganizationIntegration';
+import type { IntegrationProvider } from '../models/OrganizationIntegration';
 import { ApiError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth';
 import type { UserRole } from '../models/User';
@@ -618,6 +620,148 @@ export async function removeOrSuspendMember(req: AuthRequest, res: Response, nex
     res.json({
       data: { removed: false, suspended: true },
       message: 'Member suspended',
+    });
+  } catch (err) {
+    if (err instanceof ApiError) {
+      res.status(err.statusCode ?? 500).json({ error: err.name, message: err.message });
+      return;
+    }
+    next(err);
+  }
+}
+
+// --- Integrations (org-level, higher ups only) ---
+
+export const INTEGRATION_CATALOG: {
+  id: IntegrationProvider;
+  name: string;
+  description: string;
+  category: string;
+}[] = [
+  {
+    id: 'google_calendar',
+    name: 'Google Calendar',
+    description: 'Manage calendar events and schedule appointments.',
+    category: 'Productivity',
+  },
+  {
+    id: 'google_sheets',
+    name: 'Google Sheets',
+    description: 'Read and write data to Google Sheets spreadsheets.',
+    category: 'Productivity',
+  },
+];
+
+export async function listIntegrations(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    if (!canAccessHigherUps(req)) {
+      throw new ApiError('Only owners and admins can manage integrations', 403);
+    }
+    const orgId = req.user!.organizationId;
+    if (!orgId) {
+      throw new ApiError('No organization associated with your account', 400);
+    }
+    const connections = await OrganizationIntegration.find({
+      organizationId: orgId,
+      status: 'connected',
+    })
+      .lean()
+      .exec();
+    const connectedSet = new Set(connections.map((c) => (c as { provider?: string }).provider));
+    const connectedAtMap = new Map(
+      connections.map((c) => [(c as { provider?: string }).provider, (c as { connectedAt?: Date }).connectedAt])
+    );
+    const byCategory = new Map<string, typeof INTEGRATION_CATALOG>();
+    for (const item of INTEGRATION_CATALOG) {
+      const list = byCategory.get(item.category) ?? [];
+      list.push(item);
+      byCategory.set(item.category, list);
+    }
+    const list = Array.from(byCategory.entries()).map(([category, items]) => ({
+      category,
+      integrations: items.map((i) => ({
+        id: i.id,
+        name: i.name,
+        description: i.description,
+        category: i.category,
+        connected: connectedSet.has(i.id),
+        connectedAt: connectedAtMap.get(i.id),
+      })),
+    }));
+    res.json({
+      data: { categories: list },
+      message: 'OK',
+    });
+  } catch (err) {
+    if (err instanceof ApiError) {
+      res.status(err.statusCode ?? 500).json({ error: err.name, message: err.message });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function connectIntegration(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    if (!canAccessHigherUps(req)) {
+      throw new ApiError('Only owners and admins can manage integrations', 403);
+    }
+    const orgId = req.user!.organizationId;
+    if (!orgId) {
+      throw new ApiError('No organization associated with your account', 400);
+    }
+    const provider = req.params.provider as IntegrationProvider;
+    if (!INTEGRATION_CATALOG.some((i) => i.id === provider)) {
+      throw new ApiError('Unknown integration', 400);
+    }
+    const existing = await OrganizationIntegration.findOne({
+      organizationId: orgId,
+      provider,
+    });
+    if (existing) {
+      (existing as { status?: string }).status = 'connected';
+      (existing as { connectedAt?: Date }).connectedAt = new Date();
+      (existing as { disconnectedAt?: Date }).disconnectedAt = undefined;
+      await existing.save();
+    } else {
+      await OrganizationIntegration.create({
+        organizationId: orgId,
+        provider,
+        status: 'connected',
+        connectedAt: new Date(),
+      });
+    }
+    res.json({
+      data: { provider, connected: true },
+      message: 'Integration connected',
+    });
+  } catch (err) {
+    if (err instanceof ApiError) {
+      res.status(err.statusCode ?? 500).json({ error: err.name, message: err.message });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function disconnectIntegration(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    if (!canAccessHigherUps(req)) {
+      throw new ApiError('Only owners and admins can manage integrations', 403);
+    }
+    const orgId = req.user!.organizationId;
+    if (!orgId) {
+      throw new ApiError('No organization associated with your account', 400);
+    }
+    const provider = req.params.provider as IntegrationProvider;
+    await OrganizationIntegration.findOneAndUpdate(
+      { organizationId: orgId, provider },
+      { status: 'disconnected', disconnectedAt: new Date() },
+      { new: true }
+    );
+    res.json({
+      data: { provider, connected: false },
+      message: 'Integration disconnected',
     });
   } catch (err) {
     if (err instanceof ApiError) {
