@@ -1,6 +1,8 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
 import {
@@ -10,7 +12,13 @@ import {
   MessageSquare,
   BarChart3,
   Settings,
+  ChevronLeft,
+  ChevronRight,
+  LogOut,
 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+
+const STORAGE_KEY = 'aivora-sidebar-collapsed';
 
 const nav = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -23,35 +31,139 @@ const nav = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { logout } = useAuth();
+  const [collapsed, setCollapsed] = useState(false);
+  const [borderHovered, setBorderHovered] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored !== null) setCollapsed(JSON.parse(stored));
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(collapsed));
+    } catch {
+      // ignore
+    }
+  }, [collapsed, mounted]);
 
   return (
-    <aside className="w-56 flex-shrink-0 border-r border-brand-border bg-brand-sidebar">
-      <div className="p-4">
-        <Link href="/dashboard" className="flex items-center gap-2 font-semibold text-brand-textHeading">
-          Aivora
-        </Link>
+    <aside
+      className={clsx(
+        'flex-shrink-0 flex flex-col border-r border-brand-border bg-brand-sidebar transition-[width] duration-300 ease-in-out',
+        'relative',
+        collapsed ? 'w-[72px]' : 'w-56'
+      )}
+    >
+      {/* Subtle gradient overlay for depth */}
+      <div
+        className="pointer-events-none absolute inset-0 bg-gradient-to-b from-brand-primary/5 via-transparent to-transparent opacity-80 overflow-hidden"
+        aria-hidden
+      />
+
+      <div className="relative flex flex-col h-full min-h-0 overflow-hidden">
+        {/* Logo */}
+        <div className={clsx('flex items-center border-b border-brand-border/80', collapsed ? 'min-h-[80px] px-2 py-4 justify-center' : 'min-h-[96px] px-4 py-4')}>
+          <Link
+            href="/dashboard"
+            className={clsx(
+              'flex items-center overflow-hidden rounded-lg transition-opacity hover:opacity-90',
+              collapsed ? 'h-14 w-14 shrink-0 justify-center' : 'min-w-0 flex-1'
+            )}
+            title="Aivora"
+          >
+            <span className={clsx('relative shrink-0 overflow-hidden rounded-lg bg-white/5 flex items-center justify-center', collapsed ? 'h-14 w-14' : 'h-[4.5rem] w-[4.5rem]')}>
+              <Image
+                src="/aivora.png"
+                alt="Aivora"
+                width={80}
+                height={80}
+                className="h-full w-full object-contain p-1"
+              />
+            </span>
+          </Link>
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
+          {nav.map((item) => {
+            const Icon = item.icon;
+            const isActive =
+              pathname === item.href ||
+              (item.href !== '/dashboard' && pathname.startsWith(item.href));
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                title={collapsed ? item.label : undefined}
+                className={clsx(
+                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                  'hover:bg-brand-divider/80 active:scale-[0.98]',
+                  collapsed && 'justify-center px-0 py-2.5',
+                  isActive
+                    ? 'bg-brand-divider text-white shadow-sm [&_svg]:text-brand-link'
+                    : 'text-brand-textMuted hover:text-brand-textHeading',
+                  isActive && !collapsed && 'border-l-2 border-brand-primary -ml-px pl-[13px]',
+                  isActive && collapsed && 'ring-2 ring-brand-primary/50 ring-inset'
+                )}
+              >
+                <Icon className="w-5 h-5 shrink-0" />
+                {!collapsed && <span className="truncate">{item.label}</span>}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Log out at bottom */}
+        <div className="relative p-2 border-t border-brand-border/80">
+          <button
+            type="button"
+            onClick={() => logout()}
+            title={collapsed ? 'Log out' : undefined}
+            className={clsx(
+              'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+              'text-brand-textMuted hover:bg-brand-divider hover:text-brand-textHeading focus:outline-none focus:ring-2 focus:ring-brand-primary/50 focus:ring-inset',
+              collapsed && 'justify-center px-0'
+            )}
+          >
+            <LogOut className="w-5 h-5 shrink-0" />
+            {!collapsed && <span className="truncate">Log out</span>}
+          </button>
+        </div>
       </div>
-      <nav className="px-3 py-2 space-y-0.5">
-        {nav.map((item) => {
-          const Icon = item.icon;
-          const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={clsx(
-                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200',
-                isActive
-                  ? 'bg-brand-divider text-white [&_svg]:text-brand-link'
-                  : 'text-brand-textMuted hover:bg-brand-divider/70 hover:text-brand-textHeading'
-              )}
-            >
-              <Icon className="w-4 h-4" />
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
+
+      {/* Border hover zone: full height so arrow shows when hovering logo or menu items; arrow stays near logo */}
+      <div
+        className="absolute -right-4 top-0 bottom-0 w-12 z-10"
+        onMouseEnter={() => setBorderHovered(true)}
+        onMouseLeave={() => setBorderHovered(false)}
+        aria-hidden
+      >
+        <button
+          type="button"
+          onClick={() => setCollapsed((c) => !c)}
+          className={clsx(
+            'absolute -right-0 top-[6.5rem] h-8 w-8 -translate-y-1/2 translate-x-0 rounded-full',
+            'flex items-center justify-center shrink-0',
+            'border border-brand-border bg-brand-bgCard text-brand-textMuted shadow-md',
+            'transition-opacity duration-200 hover:bg-brand-divider hover:text-brand-textHeading hover:border-brand-borderLight',
+            'focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2 focus:ring-offset-brand-sidebar',
+            borderHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          )}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        </button>
+      </div>
     </aside>
   );
 }
