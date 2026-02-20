@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { FeaturesSection } from '@/components/FeaturesSection';
 import { HowItWorksSection } from '@/components/HowItWorksSection';
+import { PricingSection } from '@/components/PricingSection';
 
 const LiquidEther = dynamic(() => import('@/components/LiquidEther'), { ssr: false });
 
@@ -94,34 +95,7 @@ export default function LandingPage() {
 
         <HowItWorksSection />
 
-        <section className="py-24">
-          <div className="max-w-4xl mx-auto px-4 text-center">
-            <h2 className="text-2xl font-semibold text-brand-textHeading mb-8">Pricing</h2>
-            <div className="grid md:grid-cols-2 gap-8 max-w-2xl mx-auto">
-              <div className="rounded-xl border border-brand-border p-8 bg-brand-bgCard">
-                <h3 className="font-semibold text-lg text-brand-textHeading mb-2">Free</h3>
-                <p className="text-3xl font-bold text-brand-textHeading mb-4">$0</p>
-                <p className="text-sm text-brand-textMuted mb-6">
-                  Get started with one bot and limited messages.
-                </p>
-                <Link
-                  href="/signup"
-                  className="text-sm font-medium text-brand-link hover:text-brand-linkHover transition-colors"
-                >
-                  Get Started
-                </Link>
-              </div>
-              <div className="rounded-xl border border-brand-border p-8 bg-brand-bgCard">
-                <h3 className="font-semibold text-lg text-brand-textHeading mb-2">Pro</h3>
-                <p className="text-3xl font-bold text-brand-textHeading mb-4">Coming soon</p>
-                <p className="text-sm text-brand-textMuted mb-6">
-                  More bots, higher limits, and priority support.
-                </p>
-                <span className="text-sm text-brand-textMuted">—</span>
-              </div>
-            </div>
-          </div>
-        </section>
+        <PricingSection />
 
         <section className="py-16">
           <div className="max-w-4xl mx-auto px-4 text-center">
