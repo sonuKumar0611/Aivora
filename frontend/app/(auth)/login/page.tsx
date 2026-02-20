@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
 import { getErrorMessage } from '@/lib/api';
 import { PasswordInput } from '@/components/ui/PasswordInput';
+import ShinyText from '@/components/ui/ShinyText';
 import { validateLoginForm } from '@/lib/validation';
 import { clsx } from 'clsx';
 
@@ -59,16 +60,29 @@ export default function LoginPage() {
       <div className="text-center mb-8 animate-auth-field animate-auth-field-delay-1">
         <Link
           href="/"
-          className="inline-block transition-transform duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2 focus:ring-offset-brand-bgCard rounded-lg"
+          className="inline-flex items-center justify-center gap-2 transition-transform duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2 focus:ring-offset-brand-bgCard rounded-lg"
           aria-label="Aivora home"
         >
           <Image
-            src="/aivora.png"
-            alt="Aivora"
-            width={80}
-            height={80}
-            className="mx-auto"
+            src="/brand-logo.png"
+            alt=""
+            width={40}
+            height={40}
+            className="h-10 w-10 shrink-0 object-contain"
+            aria-hidden
             priority
+          />
+          <ShinyText
+            text="Aivora™"
+            speed={2}
+            delay={0}
+            color="hsl(var(--text-muted))"
+            shineColor="hsl(var(--primary))"
+            spread={120}
+            direction="left"
+            yoyo={false}
+            pauseOnHover={false}
+            className="font-semibold tracking-tight text-2xl"
           />
         </Link>
         <h1 className="mt-4 text-2xl font-semibold text-brand-textHeading">Log in</h1>

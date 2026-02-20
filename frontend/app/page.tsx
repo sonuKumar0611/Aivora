@@ -5,6 +5,7 @@ import { FeaturesSection } from '@/components/FeaturesSection';
 import { HowItWorksSection } from '@/components/HowItWorksSection';
 import { PricingSection } from '@/components/PricingSection';
 import { NewsletterSection } from '@/components/NewsletterSection';
+import ShinyText from '@/components/ui/ShinyText';
 
 const LiquidEther = dynamic(() => import('@/components/LiquidEther'), { ssr: false });
 
@@ -34,14 +35,27 @@ export default function LandingPage() {
       </div>
       <header className="sticky top-0 left-0 right-0 z-20 border-b border-white/10 glass">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-90">
             <Image
-              src="/aivora.png"
-              alt="Aivora"
-              width={120}
+              src="/brand-logo.png"
+              alt=""
+              width={36}
               height={36}
-              className="h-9 w-auto object-contain"
+              className="h-9 w-9 shrink-0 object-contain"
+              aria-hidden
               priority
+            />
+            <ShinyText
+              text="Aivora™"
+              speed={2}
+              delay={0}
+              color="hsl(var(--text-muted))"
+              shineColor="hsl(var(--primary))"
+              spread={120}
+              direction="left"
+              yoyo={false}
+              pauseOnHover={false}
+              className="font-semibold tracking-tight text-xl"
             />
           </Link>
           <nav className="flex items-center gap-4">
@@ -105,13 +119,28 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-4 py-12 sm:py-14">
           <div className="flex flex-col sm:flex-row items-start gap-4">
             <Link href="/" className="flex flex-col sm:flex-row items-center sm:items-center gap-4 group">
-              <Image
-                src="/aivora.png"
-                alt="Aivora"
-                width={140}
-                height={42}
-                className="h-10 w-auto object-contain opacity-95 group-hover:opacity-100 transition-opacity"
-              />
+              <span className="flex items-center gap-2 shrink-0">
+                <Image
+                  src="/brand-logo.png"
+                  alt=""
+                  width={40}
+                  height={40}
+                  className="h-10 w-10 object-contain opacity-95 group-hover:opacity-100 transition-opacity"
+                  aria-hidden
+                />
+                <ShinyText
+                  text="Aivora™"
+                  speed={2}
+                  delay={0}
+                  color="hsl(var(--text-muted))"
+                  shineColor="hsl(var(--primary))"
+                  spread={120}
+                  direction="left"
+                  yoyo={false}
+                  pauseOnHover={false}
+                  className="font-semibold tracking-tight text-xl opacity-95 group-hover:opacity-100 transition-opacity"
+                />
+              </span>
               <span className="text-brand-textMuted text-sm max-w-xs text-left">
                 AI Customer Support Automation — scale support without the wait.
               </span>
