@@ -1,4 +1,5 @@
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 import Link from 'next/link';
 
 const LiquidEther = dynamic(() => import('@/components/LiquidEther'), { ssr: false });
@@ -8,7 +9,16 @@ export default function LandingPage() {
     <div className="min-h-screen bg-brand-bg text-brand-text">
       <header className="border-b border-brand-border sticky top-0 z-20 glass">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <span className="font-semibold text-lg text-brand-textHeading">Aivora</span>
+          <Link href="/" className="flex items-center gap-2">
+            <Image
+              src="/aivora.png"
+              alt="Aivora"
+              width={120}
+              height={36}
+              className="h-9 w-auto object-contain"
+              priority
+            />
+          </Link>
           <nav className="flex items-center gap-4">
             <Link
               href="/login"
@@ -29,7 +39,8 @@ export default function LandingPage() {
       <main>
         {/* Hero with LiquidEther background */}
         <section className="relative min-h-[85vh] flex flex-col items-center justify-center overflow-hidden">
-          <div className="absolute inset-0 w-full h-full">
+          {/* Canvas layer: explicit z-0, contain paint so repaints don't distort text above */}
+          <div className="absolute inset-0 w-full h-full z-0 [contain:paint]">
             <LiquidEther
               colors={['#5227FF', '#FF9FFC', '#B19EEF']}
               mouseForce={20}
@@ -49,25 +60,29 @@ export default function LandingPage() {
               className="absolute inset-0 w-full h-full"
             />
           </div>
-          <div className="relative z-10 max-w-4xl mx-auto px-4 py-16 text-center pointer-events-auto">
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-brand-textHeading mb-6 animate-fade-in drop-shadow-lg">
-              Build AI Customer Support in Minutes
-            </h1>
-            <p className="text-lg sm:text-xl text-brand-textMuted mb-10 max-w-2xl mx-auto animate-fade-in [animation-delay:0.1s] opacity-95">
-              Create, test, and deploy AI chatbots using your own knowledge base. No code required.
+          {/* Text on its own compositing layer; no box/glass so no visible container */}
+          <div className="relative z-10 max-w-4xl mx-auto px-4 py-20 text-center pointer-events-auto isolate [transform:translateZ(0)] [backface-visibility:hidden]">
+            <p className="inline-flex items-center gap-2 rounded-full border border-brand-border bg-brand-bgCard/60 backdrop-blur-sm px-4 py-1.5 text-sm text-brand-textMuted mb-8 animate-fade-in">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-primary opacity-60" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-primary" />
+              </span>
+              No-code AI • Your knowledge, instant answers
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in [animation-delay:0.2s]">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-brand-textHeading mb-6 animate-fade-in [animation-delay:0.05s] leading-[1.15] hero-headline">
+              Support that scales.
+              <br />
+              <span className="text-brand-primary">Without the wait.</span>
+            </h1>
+            <p className="text-lg sm:text-xl text-brand-textMuted mb-12 max-w-2xl mx-auto animate-fade-in [animation-delay:0.1s] opacity-95 leading-relaxed">
+              Train an AI chatbot on your docs, FAQs, and content. Deploy in minutes. Embed anywhere—no engineering required.
+            </p>
+            <div className="flex justify-center animate-fade-in [animation-delay:0.2s]">
               <Link
                 href="/signup"
-                className="inline-flex items-center justify-center rounded-xl bg-gradient-primary text-white px-8 py-4 text-base font-semibold hover:opacity-95 transition-all hover:shadow-glow-primary shadow-lg"
+                className="inline-flex items-center justify-center rounded-xl bg-gradient-primary text-white px-8 py-4 text-base font-semibold hover:opacity-95 transition-all hover:shadow-glow-primary shadow-lg hover:scale-[1.02] active:scale-[0.98]"
               >
-                Get Started
-              </Link>
-              <Link
-                href="/login"
-                className="inline-flex items-center justify-center rounded-xl border border-brand-border bg-brand-bgCard/80 backdrop-blur-sm text-brand-textHeading px-8 py-4 text-base font-medium hover:bg-brand-bgCardHover transition-colors"
-              >
-                Log in
+                Get Started — It&apos;s free
               </Link>
             </div>
           </div>
