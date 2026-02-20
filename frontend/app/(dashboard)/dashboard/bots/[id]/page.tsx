@@ -12,9 +12,9 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { TONE_OPTIONS, BOT_TYPE_OPTIONS } from '@/lib/constants';
 import toast from 'react-hot-toast';
 import { getErrorMessage } from '@/lib/api';
-import { ArrowLeft, Code, BookOpen, User } from 'lucide-react';
+import { ArrowLeft, Code, BookOpen, User, Settings } from 'lucide-react';
 
-type TabId = 'profile' | 'kb' | 'preview';
+type TabId = 'profile' | 'kb' | 'preview' | 'settings';
 
 export default function BotEditPage() {
   const params = useParams();
@@ -67,7 +67,6 @@ export default function BotEditPage() {
         description: description.trim(),
         tone,
         botType,
-        systemPrompt: systemPrompt.trim() || undefined,
       },
       {
         onSuccess: () => toast.success('Profile updated'),
@@ -130,7 +129,7 @@ export default function BotEditPage() {
 
   if (isLoading || !bot) {
     return (
-      <div className="space-y-8 max-w-2xl animate-fade-in">
+      <div className="space-y-8 animate-fade-in">
         <Link href="/dashboard/bots" className="inline-flex items-center text-sm text-brand-textMuted hover:text-brand-text">
           <ArrowLeft className="w-4 h-4 mr-1" /> Back to bots
         </Link>
@@ -152,10 +151,11 @@ export default function BotEditPage() {
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'kb', label: 'Knowledge base', icon: BookOpen },
     { id: 'preview', label: 'Preview script', icon: Code },
+    { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
   return (
-    <div className="space-y-6 max-w-2xl animate-fade-in">
+    <div className="h-full flex flex-col space-y-6 animate-fade-in pb-10">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <Link href="/dashboard/bots" className="inline-flex items-center text-sm text-brand-textMuted hover:text-brand-text mb-2">
@@ -211,52 +211,54 @@ export default function BotEditPage() {
       {/* Tab: Profile */}
       {activeTab === 'profile' && (
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-2">
             <h2 className="font-semibold text-brand-textHeading">Bot profile</h2>
-            <p className="text-sm text-brand-textMuted mt-1">Update name, type, prompt, and description.</p>
+            <p className="text-sm text-brand-textMuted mt-2">Update bot name, type, and description.</p>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={saveProfile} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-brand-text mb-1">Bot name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-lg border border-brand-borderLight bg-brand-sidebar px-3 py-2 text-brand-text focus:ring-2 focus:ring-brand-primary"
-                  required
-                />
+          <CardContent className="space-y-8 pt-8 pb-8">
+            <form onSubmit={saveProfile} className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-brand-text">Bot name</label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full rounded-lg border border-brand-borderLight bg-brand-sidebar px-3 py-2.5 text-brand-text focus:ring-2 focus:ring-brand-primary"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-brand-text">Bot type</label>
+                  <select
+                    value={botType}
+                    onChange={(e) => setBotType(e.target.value)}
+                    className="w-full rounded-lg border border-brand-borderLight bg-brand-sidebar px-3 py-2.5 text-brand-text focus:ring-2 focus:ring-brand-primary"
+                  >
+                    {BOT_TYPE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-brand-text mb-1">Bot type</label>
-                <select
-                  value={botType}
-                  onChange={(e) => setBotType(e.target.value)}
-                  className="w-full rounded-lg border border-brand-borderLight bg-brand-sidebar px-3 py-2 text-brand-text focus:ring-2 focus:ring-brand-primary"
-                >
-                  {BOT_TYPE_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-brand-text mb-1">Bot description</label>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-brand-text">Bot description</label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  rows={4}
-                  className="w-full rounded-lg border border-brand-borderLight bg-brand-sidebar px-3 py-2 text-brand-text focus:ring-2 focus:ring-brand-primary"
+                  rows={5}
+                  className="w-full rounded-lg border border-brand-borderLight bg-brand-sidebar px-3 py-2.5 text-brand-text focus:ring-2 focus:ring-brand-primary"
                   required
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-brand-text mb-1">Tone</label>
+              <div className="max-w-xs space-y-2">
+                <label className="block text-sm font-medium text-brand-text">Tone</label>
                 <select
                   value={tone}
                   onChange={(e) => setTone(e.target.value)}
-                  className="w-full rounded-lg border border-brand-borderLight bg-brand-sidebar px-3 py-2 text-brand-text focus:ring-2 focus:ring-brand-primary"
+                  className="w-full rounded-lg border border-brand-borderLight bg-brand-sidebar px-3 py-2.5 text-brand-text focus:ring-2 focus:ring-brand-primary"
                 >
                   {TONE_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -265,9 +267,11 @@ export default function BotEditPage() {
                   ))}
                 </select>
               </div>
-              <Button type="submit" disabled={updateBot.isPending || !name.trim() || !description.trim()}>
-                {updateBot.isPending ? 'Saving…' : 'Save profile'}
-              </Button>
+              <div className="pt-4 border-t border-brand-borderLight">
+                <Button type="submit" disabled={updateBot.isPending || !name.trim() || !description.trim()}>
+                  {updateBot.isPending ? 'Saving…' : 'Save profile'}
+                </Button>
+              </div>
             </form>
           </CardContent>
         </Card>
@@ -276,11 +280,11 @@ export default function BotEditPage() {
       {/* Tab: KB */}
       {activeTab === 'kb' && (
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-2">
             <h2 className="font-semibold text-brand-textHeading">Knowledge base</h2>
-            <p className="text-sm text-brand-textMuted mt-1">Select at least one document and optionally add custom prompts.</p>
+            <p className="text-sm text-brand-textMuted mt-2">Select at least one document and optionally add custom prompts.</p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-6 pt-8 pb-8">
             <form onSubmit={saveKb} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-brand-text mb-2">Knowledge base <span className="text-brand-error">*</span></label>
@@ -329,12 +333,14 @@ export default function BotEditPage() {
                   placeholder="Custom instructions for how the bot should respond when using this knowledge base..."
                 />
               </div>
-              <Button
-                type="submit"
-                disabled={updateBot.isPending || sources.length === 0 || selectedSourceIds.length === 0}
-              >
-                {updateBot.isPending ? 'Saving…' : 'Update knowledge base'}
-              </Button>
+              <div className="pt-4 border-t border-brand-borderLight">
+                <Button
+                  type="submit"
+                  disabled={updateBot.isPending || sources.length === 0 || selectedSourceIds.length === 0}
+                >
+                  {updateBot.isPending ? 'Saving…' : 'Update knowledge base'}
+                </Button>
+              </div>
             </form>
           </CardContent>
         </Card>
@@ -343,15 +349,15 @@ export default function BotEditPage() {
       {/* Tab: Preview */}
       {activeTab === 'preview' && (
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-2">
             <h2 className="font-semibold text-brand-textHeading flex items-center gap-2">
               <Code className="w-4 h-4" /> Embed widget
             </h2>
-            <p className="text-sm text-brand-textMuted mt-1">
+            <p className="text-sm text-brand-textMuted mt-2">
               Add this script to your website. {status !== 'published' && 'Publish the bot for the script to work.'}
             </p>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6 pt-8 pb-8">
             <pre className="rounded-lg bg-brand-border p-4 text-xs overflow-x-auto text-brand-text">
               {`<script src="${origin || ''}/widget.js" data-bot="${id}" data-api="${process.env.NEXT_PUBLIC_API_URL || ''}"></script>`}
             </pre>
@@ -368,7 +374,7 @@ export default function BotEditPage() {
               Copy embed code
             </Button>
             {status !== 'published' && (
-              <div className="pt-2 border-t border-brand-borderLight flex justify-end">
+              <div className="pt-6 border-t border-brand-borderLight flex justify-end">
                 <Button
                   onClick={handlePublish}
                   disabled={publishBot.isPending || selectedSourceIds.length === 0}
@@ -381,19 +387,23 @@ export default function BotEditPage() {
         </Card>
       )}
 
-      <Card className="border-red-200 dark:border-red-900/50">
-        <CardHeader>
-          <h2 className="font-semibold text-red-600 dark:text-red-400">Danger zone</h2>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-brand-textMuted mb-4">
-            Deleting this bot will remove its chat history. This cannot be undone.
-          </p>
-          <Button variant="danger" onClick={handleDelete} disabled={deleteBot.isPending}>
-            {deleteBot.isPending ? 'Deleting…' : 'Delete bot'}
-          </Button>
-        </CardContent>
-      </Card>
+      {/* Tab: Settings */}
+      {activeTab === 'settings' && (
+        <Card className="border-red-200 dark:border-red-900/50">
+          <CardHeader className="pb-2">
+            <h2 className="font-semibold text-red-600 dark:text-red-400">Danger zone</h2>
+            <p className="text-sm text-brand-textMuted mt-2">Irreversible actions for this bot.</p>
+          </CardHeader>
+          <CardContent className="pt-6 pb-8">
+            <p className="text-sm text-brand-textMuted mb-4">
+              Deleting this bot will remove its chat history. This cannot be undone.
+            </p>
+            <Button variant="danger" onClick={handleDelete} disabled={deleteBot.isPending}>
+              {deleteBot.isPending ? 'Deleting…' : 'Delete bot'}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
