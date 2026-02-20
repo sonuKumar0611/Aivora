@@ -11,6 +11,7 @@ router.put('/organization', settingsController.updateOrganization);
 
 router.get('/profile', settingsController.getProfile);
 router.put('/profile', settingsController.updateProfile);
+router.patch('/onboarding', settingsController.updateOnboarding);
 router.post('/profile/change-password', settingsController.changePassword);
 
 router.get('/api-keys', settingsController.listApiKeys);

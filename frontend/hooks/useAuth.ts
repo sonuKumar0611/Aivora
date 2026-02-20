@@ -36,7 +36,7 @@ export function useAuth() {
     onSuccess: (data) => {
       localStorage.setItem('aivora_token', data.token);
       queryClient.setQueryData(['me'], data.user);
-      router.push('/dashboard');
+      router.push('/onboarding');
     },
   });
 
@@ -48,7 +48,7 @@ export function useAuth() {
     onSuccess: (data) => {
       localStorage.setItem('aivora_token', data.token);
       queryClient.setQueryData(['me'], data.user);
-      router.push('/dashboard');
+      router.push(data.user.onboardingCompleted ? '/dashboard' : '/onboarding');
     },
   });
 

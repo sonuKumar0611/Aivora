@@ -112,6 +112,84 @@ export async function sendInviteEmail(params: InviteEmailParams): Promise<void> 
   });
 }
 
+export interface PasswordResetEmailParams {
+  to: string;
+  resetUrl: string;
+  expiresInMinutes: number;
+}
+
+export async function sendPasswordResetEmail(params: PasswordResetEmailParams): Promise<void> {
+  const t = getTransporter();
+  const from = env.EMAIL_SENDER;
+  if (!t || !from) {
+    console.warn('Email not configured. Password reset email skipped.');
+    return;
+  }
+  const { to, resetUrl, expiresInMinutes } = params;
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reset your Aivora password</title>
+</head>
+<body style="margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f5f5f5; padding: 24px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 520px; background: #ffffff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden;">
+          <tr>
+            <td style="padding: 32px 28px 24px;">
+              <h1 style="margin: 0 0 8px; font-size: 22px; font-weight: 600; color: #1a1a1a;">
+                Reset your password
+              </h1>
+              <p style="margin: 0; font-size: 15px; color: #4b5563; line-height: 1.5;">
+                We received a request to reset your Aivora password. Click the button below to set a new password. This link expires in ${expiresInMinutes} minutes.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 0 28px 28px;">
+              <a href="${escapeHtml(resetUrl)}" style="display: inline-block; padding: 12px 24px; background: #6366f1; color: #ffffff !important; font-size: 15px; font-weight: 600; text-decoration: none; border-radius: 8px;">
+                Reset password
+              </a>
+              <p style="margin: 16px 0 0; font-size: 13px; color: #64748b;">
+                Or copy this link: <br/>
+                <a href="${escapeHtml(resetUrl)}" style="color: #6366f1; word-break: break-all;">${escapeHtml(resetUrl)}</a>
+              </p>
+              <p style="margin: 16px 0 0; font-size: 13px; color: #94a3b8;">
+                If you didn't request a password reset, you can safely ignore this email.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`.trim();
+
+  const text = [
+    'Reset your Aivora password',
+    '',
+    `We received a request to reset your password. Use this link within ${expiresInMinutes} minutes:`,
+    '',
+    resetUrl,
+    '',
+    "If you didn't request this, you can ignore this email.",
+  ].join('\n');
+
+  await t.sendMail({
+    from: `Aivora <${from}>`,
+    to,
+    subject: 'Reset your Aivora password',
+    text,
+    html,
+  });
+}
+
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, '&amp;')

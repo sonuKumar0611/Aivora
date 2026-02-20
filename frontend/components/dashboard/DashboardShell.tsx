@@ -5,14 +5,18 @@ import { useAuth } from '@/hooks/useAuth';
 import { Sidebar } from './Sidebar';
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
-  const { isLoading, isAuthenticated } = useAuth();
+  const { isLoading, isAuthenticated, user } = useAuth();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       if (typeof window !== 'undefined') localStorage.removeItem('aivora_token');
       window.location.href = '/login';
+      return;
     }
-  }, [isLoading, isAuthenticated]);
+    if (!isLoading && isAuthenticated && user && !user.onboardingCompleted) {
+      window.location.href = '/onboarding';
+    }
+  }, [isLoading, isAuthenticated, user]);
 
   if (isLoading) {
     return (

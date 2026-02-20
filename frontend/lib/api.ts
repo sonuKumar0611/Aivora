@@ -25,7 +25,11 @@ api.interceptors.response.use(
     if (err.response?.status === 401 && typeof window !== 'undefined') {
       const url = err.config?.url ?? '';
       const isAuthEndpoint =
-        url.includes('/auth/me') || url.includes('/auth/login') || url.includes('/auth/signup');
+        url.includes('/auth/me') ||
+        url.includes('/auth/login') ||
+        url.includes('/auth/signup') ||
+        url.includes('/auth/forgot-password') ||
+        url.includes('/auth/reset-password');
       if (!isAuthEndpoint) {
         localStorage.removeItem('aivora_token');
         window.location.href = '/login';
@@ -75,6 +79,8 @@ export interface User {
   role: UserRole;
   organizationId: string | null;
   displayName?: string;
+  onboardingStep?: number;
+  onboardingCompleted?: boolean;
 }
 
 export interface Organization {

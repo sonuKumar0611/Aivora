@@ -1,12 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { z } from 'zod';
 import { User } from '../models/User';
 import { Organization } from '../models/Organization';
 import { env } from '../utils/env';
 import { ApiError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth';
+import { sendPasswordResetEmail } from '../services/email';
 
 const signupSchema = z.object({
   email: z.string().email('Invalid email'),
@@ -41,6 +43,7 @@ export async function signup(req: Request, res: Response, next: NextFunction): P
       env.JWT_SECRET,
       { expiresIn: '7d' }
     );
+    const u = user as { onboardingStep?: number; onboardingCompleted?: boolean };
     res.status(201).json({
       data: {
         user: {
@@ -49,6 +52,8 @@ export async function signup(req: Request, res: Response, next: NextFunction): P
           role: 'owner',
           organizationId: org._id.toString(),
           displayName: user.displayName ?? '',
+          onboardingStep: u.onboardingStep ?? 0,
+          onboardingCompleted: u.onboardingCompleted ?? false,
         },
         token,
         expiresIn: '7d',
@@ -71,7 +76,7 @@ export async function signup(req: Request, res: Response, next: NextFunction): P
 export async function login(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const body = loginSchema.parse(req.body);
-    const user = await User.findOne({ email: body.email.toLowerCase() }).select('+password role organizationId displayName status');
+    const user = await User.findOne({ email: body.email.toLowerCase() }).select('+password role organizationId displayName status onboardingStep onboardingCompleted');
     if (!user) {
       res.status(401).json({ error: 'Invalid credentials', message: 'Email or password incorrect' });
       return;
@@ -96,7 +101,7 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
       { expiresIn: '7d' }
     );
     const orgId = user.organizationId?.toString() ?? null;
-    const uOut = user as { role?: string; displayName?: string };
+    const uOut = user as { role?: string; displayName?: string; onboardingStep?: number; onboardingCompleted?: boolean };
     res.json({
       data: {
         user: {
@@ -105,6 +110,8 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
           role: uOut.role ?? 'owner',
           organizationId: orgId,
           displayName: uOut.displayName ?? '',
+          onboardingStep: uOut.onboardingStep ?? 0,
+          onboardingCompleted: uOut.onboardingCompleted ?? false,
         },
         token,
         expiresIn: '7d',
@@ -134,11 +141,85 @@ export async function me(req: AuthRequest, res: Response, next: NextFunction): P
           role: req.user.role,
           organizationId: req.user.organizationId,
           displayName: req.user.displayName ?? '',
+          onboardingStep: req.user.onboardingStep ?? 0,
+          onboardingCompleted: req.user.onboardingCompleted ?? false,
         },
       },
       message: 'OK',
     });
   } catch (err) {
+    next(err);
+  }
+}
+
+const forgotPasswordSchema = z.object({
+  email: z.string().email('Invalid email'),
+});
+
+const RESET_TOKEN_BYTES = 32;
+const RESET_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
+
+export async function forgotPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const body = forgotPasswordSchema.parse(req.body);
+    const user = await User.findOne({ email: body.email.toLowerCase() });
+    // Always return success to avoid email enumeration
+    if (!user) {
+      res.json({ data: { sent: true }, message: 'If that email is registered, we sent a reset link.' });
+      return;
+    }
+    const token = crypto.randomBytes(RESET_TOKEN_BYTES).toString('hex');
+    (user as { passwordResetToken?: string }).passwordResetToken = token;
+    (user as { passwordResetExpires?: Date }).passwordResetExpires = new Date(Date.now() + RESET_EXPIRY_MS);
+    await user.save();
+    const resetUrl = `${env.FRONTEND_URL}/reset-password?token=${encodeURIComponent(token)}`;
+    await sendPasswordResetEmail({
+      to: user.email,
+      resetUrl,
+      expiresInMinutes: Math.floor(RESET_EXPIRY_MS / 60000),
+    });
+    res.json({ data: { sent: true }, message: 'If that email is registered, we sent a reset link.' });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: 'Validation error', message: err.errors[0].message });
+      return;
+    }
+    next(err);
+  }
+}
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(1, 'Reset token is required'),
+  newPassword: z.string().min(8, 'Password must be at least 8 characters'),
+});
+
+export async function resetPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const body = resetPasswordSchema.parse(req.body);
+    const user = await User.findOne({
+      passwordResetToken: body.token,
+    })
+      .select('+password +passwordResetToken +passwordResetExpires')
+      .exec();
+    if (!user) {
+      res.status(400).json({ error: 'Invalid link', message: 'Reset link is invalid or has expired' });
+      return;
+    }
+    const u = user as { passwordResetExpires?: Date };
+    if (u.passwordResetExpires && u.passwordResetExpires < new Date()) {
+      res.status(400).json({ error: 'Link expired', message: 'This reset link has expired. Request a new one.' });
+      return;
+    }
+    user.password = await bcrypt.hash(body.newPassword, 12);
+    (user as { passwordResetToken?: string }).passwordResetToken = undefined;
+    (user as { passwordResetExpires?: Date }).passwordResetExpires = undefined;
+    await user.save();
+    res.json({ data: { ok: true }, message: 'Password updated. You can log in with your new password.' });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: 'Validation error', message: err.errors[0].message });
+      return;
+    }
     next(err);
   }
 }
@@ -170,6 +251,8 @@ export async function acceptInvite(req: Request, res: Response, next: NextFuncti
     (user as { status?: string }).status = 'active';
     (user as { inviteToken?: string }).inviteToken = undefined;
     (user as { inviteTokenExpiresAt?: Date }).inviteTokenExpiresAt = undefined;
+    (user as { onboardingCompleted?: boolean }).onboardingCompleted = true;
+    (user as { onboardingStep?: number }).onboardingStep = 0;
     await user.save();
     const token = jwt.sign(
       { userId: user._id.toString(), email: user.email },
@@ -186,6 +269,8 @@ export async function acceptInvite(req: Request, res: Response, next: NextFuncti
           role: uOut.role ?? 'member',
           organizationId: orgId,
           displayName: uOut.displayName ?? '',
+          onboardingStep: 0,
+          onboardingCompleted: true,
         },
         token,
         expiresIn: '7d',

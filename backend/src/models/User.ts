@@ -15,6 +15,12 @@ export interface IUser extends Document {
   inviteTokenExpiresAt?: Date;
   invitedAt?: Date;
   invitedBy?: mongoose.Types.ObjectId;
+  /** Onboarding: 0=profile, 1=organization, 2=invite (optional). Completed when onboardingCompleted is true. */
+  onboardingStep: number;
+  onboardingCompleted: boolean;
+  /** Password reset (forgot password) */
+  passwordResetToken?: string;
+  passwordResetExpires?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -31,6 +37,10 @@ const userSchema = new Schema<IUser>(
     inviteTokenExpiresAt: { type: Date },
     invitedAt: { type: Date },
     invitedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    onboardingStep: { type: Number, default: 0 },
+    onboardingCompleted: { type: Boolean, default: false },
+    passwordResetToken: { type: String, sparse: true },
+    passwordResetExpires: { type: Date },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
   },
@@ -40,6 +50,7 @@ const userSchema = new Schema<IUser>(
 userSchema.index({ email: 1 });
 userSchema.index({ organizationId: 1 });
 userSchema.index({ inviteToken: 1 }, { sparse: true });
+userSchema.index({ passwordResetToken: 1 }, { sparse: true });
 
 userSchema.pre('save', function (next) {
   this.updatedAt = new Date();

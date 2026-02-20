@@ -17,6 +17,8 @@ export interface AuthRequest extends Request {
     role: UserRole;
     organizationId: string | null;
     displayName?: string;
+    onboardingStep: number;
+    onboardingCompleted: boolean;
   };
 }
 
@@ -31,7 +33,7 @@ export async function authMiddleware(req: AuthRequest, res: Response, next: Next
 
   try {
     const decoded = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
-    const user = await User.findById(decoded.userId).select('email role organizationId displayName');
+    const user = await User.findById(decoded.userId).select('email role organizationId displayName onboardingStep onboardingCompleted');
     if (!user) {
       res.status(401).json({ error: 'Invalid token', message: 'User not found' });
       return;
@@ -47,12 +49,15 @@ export async function authMiddleware(req: AuthRequest, res: Response, next: Next
       await user.save();
       organizationId = org._id.toString();
     }
+    const u = user as { onboardingStep?: number; onboardingCompleted?: boolean };
     req.user = {
       id: user._id.toString(),
       email: user.email,
       role: (user.role as UserRole) || 'owner',
       organizationId,
       displayName: user.displayName,
+      onboardingStep: u.onboardingStep ?? 0,
+      onboardingCompleted: u.onboardingCompleted ?? false,
     };
     next();
   } catch {
@@ -88,14 +93,17 @@ export async function optionalAuthMiddleware(req: AuthRequest, res: Response, ne
   }
   try {
     const decoded = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
-    const user = await User.findById(decoded.userId).select('email role organizationId displayName');
+    const user = await User.findById(decoded.userId).select('email role organizationId displayName onboardingStep onboardingCompleted');
     if (user) {
+      const u = user as { onboardingStep?: number; onboardingCompleted?: boolean };
       req.user = {
         id: user._id.toString(),
         email: user.email,
         role: ((user as { role?: string }).role as UserRole) || 'owner',
         organizationId: user.organizationId?.toString() ?? null,
         displayName: (user as { displayName?: string }).displayName,
+        onboardingStep: u.onboardingStep ?? 0,
+        onboardingCompleted: u.onboardingCompleted ?? false,
       };
     }
   } catch {

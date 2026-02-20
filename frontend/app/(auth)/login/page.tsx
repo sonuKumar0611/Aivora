@@ -131,12 +131,20 @@ export default function LoginPage() {
         </div>
 
         <div className="animate-auth-field animate-auth-field-delay-3">
-          <label
-            htmlFor="login-password"
-            className="block text-sm font-medium text-brand-text mb-1.5"
-          >
-            Password
-          </label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label
+              htmlFor="login-password"
+              className="block text-sm font-medium text-brand-text"
+            >
+              Password
+            </label>
+            <Link
+              href="/forgot-password"
+              className="text-sm font-medium text-brand-link hover:text-brand-linkHover transition-colors"
+            >
+              Forgot password?
+            </Link>
+          </div>
           <PasswordInput
             id="login-password"
             value={password}

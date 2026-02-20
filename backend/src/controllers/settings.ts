@@ -160,6 +160,47 @@ export async function updateProfile(req: AuthRequest, res: Response, next: NextF
   }
 }
 
+const updateOnboardingSchema = z.object({
+  step: z.number().int().min(0).max(10).optional(),
+  completed: z.boolean().optional(),
+});
+
+export async function updateOnboarding(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const body = updateOnboardingSchema.parse(req.body);
+    const user = await User.findById(req.user!.id);
+    if (!user) {
+      throw new ApiError('User not found', 404);
+    }
+    const u = user as { onboardingStep?: number; onboardingCompleted?: boolean };
+    if (body.step !== undefined) u.onboardingStep = body.step;
+    if (body.completed === true) {
+      u.onboardingCompleted = true;
+      u.onboardingStep = 0; // reset for consistency
+    }
+    await user.save();
+    res.json({
+      data: {
+        onboarding: {
+          step: u.onboardingStep ?? 0,
+          completed: u.onboardingCompleted ?? false,
+        },
+      },
+      message: 'Onboarding updated',
+    });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: 'Validation error', message: err.errors[0].message });
+      return;
+    }
+    if (err instanceof ApiError) {
+      res.status(err.statusCode ?? 500).json({ error: err.name, message: err.message });
+      return;
+    }
+    next(err);
+  }
+}
+
 export async function listApiKeys(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
     if (!canAccessHigherUps(req)) {
@@ -395,6 +436,8 @@ export async function inviteMember(req: AuthRequest, res: Response, next: NextFu
       inviteTokenExpiresAt,
       invitedAt: new Date(),
       invitedBy: inviter.id,
+      onboardingCompleted: true,
+      onboardingStep: 0,
     });
     const frontendUrl = env.FRONTEND_URL.replace(/\/$/, '');
     const acceptInviteUrl = `${frontendUrl}/accept-invite?token=${encodeURIComponent(inviteToken)}`;

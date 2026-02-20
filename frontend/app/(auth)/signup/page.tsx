@@ -88,7 +88,9 @@ export default function SignupPage() {
         <h1 className="mt-4 text-2xl font-semibold text-brand-textHeading">
           Create an account
         </h1>
-        <p className="mt-1 text-sm text-brand-textMuted">Get started with Aivora</p>
+        <p className="mt-1 text-sm text-brand-textMuted">
+          Get started with Aivora. You&apos;ll set up your profile and organization in the next steps.
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
