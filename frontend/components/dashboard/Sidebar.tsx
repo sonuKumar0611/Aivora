@@ -11,7 +11,6 @@ import {
   LayoutDashboard,
   Bot,
   BookOpen,
-  MessageSquare,
   BarChart3,
   Settings,
   ChevronLeft,
@@ -26,7 +25,6 @@ const nav = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/dashboard/bots', label: 'My Bots', icon: Bot },
   { href: '/dashboard/knowledge', label: 'Knowledge Base', icon: BookOpen },
-  { href: '/dashboard/chat', label: 'Test Chat', icon: MessageSquare },
   { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];

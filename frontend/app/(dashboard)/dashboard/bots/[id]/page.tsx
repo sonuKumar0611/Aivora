@@ -12,9 +12,10 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { TONE_OPTIONS, BOT_TYPE_OPTIONS } from '@/lib/constants';
 import toast from 'react-hot-toast';
 import { getErrorMessage } from '@/lib/api';
-import { ArrowLeft, Code, BookOpen, User, Settings } from 'lucide-react';
+import { ArrowLeft, Code, BookOpen, User, Settings, MessageSquare } from 'lucide-react';
+import { TestChatPanel } from '@/components/dashboard/TestChatPanel';
 
-type TabId = 'profile' | 'kb' | 'preview' | 'settings';
+type TabId = 'profile' | 'kb' | 'chat' | 'preview' | 'settings';
 
 export default function BotEditPage() {
   const params = useParams();
@@ -150,6 +151,7 @@ export default function BotEditPage() {
   const tabs: { id: TabId; label: string; icon: typeof User }[] = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'kb', label: 'Knowledge base', icon: BookOpen },
+    { id: 'chat', label: 'Test Chat', icon: MessageSquare },
     { id: 'preview', label: 'Preview script', icon: Code },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
@@ -344,6 +346,13 @@ export default function BotEditPage() {
             </form>
           </CardContent>
         </Card>
+      )}
+
+      {/* Tab: Test Chat */}
+      {activeTab === 'chat' && (
+        <div className="flex-1 flex flex-col min-h-[70vh]">
+          <TestChatPanel preselectedBotId={id} embedded />
+        </div>
       )}
 
       {/* Tab: Preview */}
