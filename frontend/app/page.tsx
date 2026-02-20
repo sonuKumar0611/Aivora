@@ -1,13 +1,14 @@
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
+import { FeaturesSection } from '@/components/FeaturesSection';
 
 const LiquidEther = dynamic(() => import('@/components/LiquidEther'), { ssr: false });
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-brand-bg text-brand-text">
-      <header className="border-b border-brand-border sticky top-0 z-20 glass">
+      <header className="absolute top-0 left-0 right-0 z-20 border-b border-white/10 glass">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <Image
@@ -37,8 +38,8 @@ export default function LandingPage() {
       </header>
 
       <main>
-        {/* Hero with LiquidEther background */}
-        <section className="relative min-h-[85vh] flex flex-col items-center justify-center overflow-hidden">
+        {/* Hero – full viewport cover */}
+        <section className="relative min-h-screen h-screen flex flex-col items-center justify-center overflow-hidden">
           {/* Canvas layer: explicit z-0, contain paint so repaints don't distort text above */}
           <div className="absolute inset-0 w-full h-full z-0 [contain:paint]">
             <LiquidEther
@@ -88,38 +89,9 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="border-t border-brand-border py-24">
-          <div className="max-w-6xl mx-auto px-4">
-            <h2 className="text-2xl font-semibold text-brand-textHeading text-center mb-12">
-              Features
-            </h2>
-            <div className="grid md:grid-cols-3 gap-8">
-              <div className="rounded-xl border border-brand-border p-6 bg-brand-bgCard transition-shadow hover:bg-brand-bgCardHover hover:shadow-glow-primary/20">
-                <h3 className="font-semibold text-brand-textHeading mb-2">Bot Builder</h3>
-                <p className="text-sm text-brand-textMuted">
-                  Create bots with custom names, business descriptions, and tone. Full control over
-                  personality.
-                </p>
-              </div>
-              <div className="rounded-xl border border-brand-border p-6 bg-brand-bgCard transition-shadow hover:bg-brand-bgCardHover hover:shadow-glow-primary/20">
-                <h3 className="font-semibold text-brand-textHeading mb-2">Knowledge Base</h3>
-                <p className="text-sm text-brand-textMuted">
-                  Upload PDFs, text, or URLs. We chunk, embed, and index so your bot answers from
-                  your content.
-                </p>
-              </div>
-              <div className="rounded-xl border border-brand-border p-6 bg-brand-bgCard transition-shadow hover:bg-brand-bgCardHover hover:shadow-glow-primary/20">
-                <h3 className="font-semibold text-brand-textHeading mb-2">Embed Anywhere</h3>
-                <p className="text-sm text-brand-textMuted">
-                  One script tag to add a chat widget to any website. Works with your existing
-                  stack.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
+        <FeaturesSection />
 
-        <section className="border-t border-brand-border py-24">
+        <section className="py-24">
           <div className="max-w-3xl mx-auto px-4 text-center">
             <h2 className="text-2xl font-semibold text-brand-textHeading mb-8">How it works</h2>
             <ol className="space-y-6 text-left">
@@ -154,7 +126,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="border-t border-brand-border py-24">
+        <section className="py-24">
           <div className="max-w-4xl mx-auto px-4 text-center">
             <h2 className="text-2xl font-semibold text-brand-textHeading mb-8">Pricing</h2>
             <div className="grid md:grid-cols-2 gap-8 max-w-2xl mx-auto">
@@ -183,7 +155,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="border-t border-brand-border py-16">
+        <section className="py-16">
           <div className="max-w-4xl mx-auto px-4 text-center">
             <h2 className="text-2xl font-semibold text-brand-textHeading mb-4">
               Ready to automate support?
@@ -198,7 +170,7 @@ export default function LandingPage() {
         </section>
       </main>
 
-      <footer className="border-t border-brand-border py-8">
+      <footer className="py-8">
         <div className="max-w-6xl mx-auto px-4 text-center text-sm text-brand-textMuted">
           Aivora – AI Customer Support Automation
         </div>

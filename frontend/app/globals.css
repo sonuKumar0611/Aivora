@@ -55,6 +55,10 @@
   --border: 220 13% 91%;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   color: hsl(var(--foreground));
   background: hsl(var(--background));
@@ -84,6 +88,16 @@ body {
   }
   .animate-slide-up {
     animation: slide-up 0.35s ease-out;
+  }
+  /* Feature card scroll-in */
+  .feature-card-reveal {
+    opacity: 0;
+    transform: translateY(32px);
+    transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .feature-card-reveal.in-view {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
