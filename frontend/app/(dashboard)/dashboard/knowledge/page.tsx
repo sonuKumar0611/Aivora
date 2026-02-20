@@ -11,6 +11,7 @@ import { getErrorMessage } from '@/lib/api';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import type { KnowledgeSource } from '@/hooks/useKnowledge';
 
 function sourceColumns(): { id: string; label: string; render: (row: KnowledgeSource) => React.ReactNode }[] {
@@ -56,6 +57,7 @@ export default function KnowledgePage() {
   const [text, setText] = useState('');
   const [url, setUrl] = useState('');
   const [dragOver, setDragOver] = useState(false);
+  const [deleteConfirmRow, setDeleteConfirmRow] = useState<KnowledgeSource | null>(null);
 
   const trimmedName = documentName.trim();
   const isNameValid = trimmedName.length >= 1 && trimmedName.length <= 255;
@@ -74,9 +76,16 @@ export default function KnowledgePage() {
       toast.error(`Remove this document from bot config first: ${names}`);
       return;
     }
-    if (!confirm(`Delete "${row.sourceMeta?.name || row.sourceMeta?.filename || row.sourceMeta?.url || row.sourceType}"?`)) return;
-    deleteSource.mutate(row.id, {
-      onSuccess: () => toast.success('Document deleted'),
+    setDeleteConfirmRow(row);
+  };
+
+  const confirmDeleteSource = () => {
+    if (!deleteConfirmRow) return;
+    deleteSource.mutate(deleteConfirmRow.id, {
+      onSuccess: () => {
+        toast.success('Document deleted');
+        setDeleteConfirmRow(null);
+      },
       onError: (err) => toast.error(getErrorMessage(err)),
     });
   };
@@ -217,6 +226,22 @@ export default function KnowledgePage() {
         />
         </div>
       )}
+
+      <ConfirmModal
+        open={!!deleteConfirmRow}
+        onClose={() => setDeleteConfirmRow(null)}
+        onConfirm={confirmDeleteSource}
+        title="Delete document?"
+        description={
+          deleteConfirmRow
+            ? `"${deleteConfirmRow.sourceMeta?.name || deleteConfirmRow.sourceMeta?.filename || deleteConfirmRow.sourceMeta?.url || deleteConfirmRow.sourceType}" will be removed. This cannot be undone.`
+            : ''
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        isLoading={deleteSource.isPending}
+      />
 
       {addOpen && (
         <div

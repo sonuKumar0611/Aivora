@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 import { getErrorMessage } from '@/lib/api';
 import { ArrowLeft, Code, BookOpen, User, Settings, MessageSquare } from 'lucide-react';
 import { TestChatPanel } from '@/components/dashboard/TestChatPanel';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 
 type TabId = 'profile' | 'kb' | 'chat' | 'preview' | 'settings';
 
@@ -33,6 +34,7 @@ export default function BotEditPage() {
   const [systemPrompt, setSystemPrompt] = useState('');
   const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>([]);
   const [origin, setOrigin] = useState('');
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   useEffect(() => {
     setOrigin(typeof window !== 'undefined' ? window.location.origin : '');
@@ -103,13 +105,19 @@ export default function BotEditPage() {
   };
 
   const handleDelete = () => {
-    if (!confirm('Delete this bot? This will remove its chat history.')) return;
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = () => {
     deleteBot.mutate(id, {
       onSuccess: () => {
         toast.success('Bot deleted');
+        setDeleteModalOpen(false);
         router.push('/dashboard/bots');
       },
-      onError: (err) => toast.error(getErrorMessage(err)),
+      onError: (err) => {
+        toast.error(getErrorMessage(err));
+      },
     });
   };
 
@@ -413,6 +421,18 @@ export default function BotEditPage() {
           </CardContent>
         </Card>
       )}
+
+      <ConfirmModal
+        open={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Delete bot?"
+        description="This will remove this bot and its chat history. This cannot be undone."
+        confirmLabel="Delete bot"
+        cancelLabel="Cancel"
+        variant="danger"
+        isLoading={deleteBot.isPending}
+      />
     </div>
   );
 }
