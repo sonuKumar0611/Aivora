@@ -2,6 +2,7 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
 import { FeaturesSection } from '@/components/FeaturesSection';
+import { HowItWorksSection } from '@/components/HowItWorksSection';
 
 const LiquidEther = dynamic(() => import('@/components/LiquidEther'), { ssr: false });
 
@@ -91,40 +92,7 @@ export default function LandingPage() {
 
         <FeaturesSection />
 
-        <section className="py-24">
-          <div className="max-w-3xl mx-auto px-4 text-center">
-            <h2 className="text-2xl font-semibold text-brand-textHeading mb-8">How it works</h2>
-            <ol className="space-y-6 text-left">
-              <li className="flex gap-4">
-                <span className="flex-shrink-0 w-8 h-8 rounded-full bg-brand-divider border border-brand-borderLight flex items-center justify-center font-medium text-brand-text">
-                  1
-                </span>
-                <div className="text-brand-text">
-                  <strong className="text-brand-textHeading">Create a bot</strong> – Set name,
-                  description, and tone for your support assistant.
-                </div>
-              </li>
-              <li className="flex gap-4">
-                <span className="flex-shrink-0 w-8 h-8 rounded-full bg-brand-divider border border-brand-borderLight flex items-center justify-center font-medium text-brand-text">
-                  2
-                </span>
-                <div className="text-brand-text">
-                  <strong className="text-brand-textHeading">Add knowledge</strong> – Upload PDFs,
-                  paste text, or add URLs. We process and index everything.
-                </div>
-              </li>
-              <li className="flex gap-4">
-                <span className="flex-shrink-0 w-8 h-8 rounded-full bg-brand-divider border border-brand-borderLight flex items-center justify-center font-medium text-brand-text">
-                  3
-                </span>
-                <div className="text-brand-text">
-                  <strong className="text-brand-textHeading">Deploy</strong> – Test in the
-                  dashboard, then embed the widget on your site.
-                </div>
-              </li>
-            </ol>
-          </div>
-        </section>
+        <HowItWorksSection />
 
         <section className="py-24">
           <div className="max-w-4xl mx-auto px-4 text-center">

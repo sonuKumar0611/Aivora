@@ -143,3 +143,24 @@ body {
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
 }
+
+/* How it works – laser line stepper */
+.laser-line-hidden {
+  opacity: 0;
+  transform: scaleY(0);
+}
+
+.laser-line-visible {
+  transform: scaleY(1);
+  opacity: 1;
+  animation: laser-glow 2.5s ease-in-out infinite 0.3s;
+}
+
+@keyframes laser-glow {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(99, 102, 241, 0.4), 0 0 16px rgba(34, 211, 238, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(99, 102, 241, 0.6), 0 0 24px rgba(34, 211, 238, 0.25);
+  }
+}
