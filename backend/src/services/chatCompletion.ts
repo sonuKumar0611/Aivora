@@ -9,20 +9,60 @@ Use the provided context to answer. If the answer is not in the context, respond
 Context:
 {retrieved_chunks}`;
 
-const FLOW_INSTRUCTION_PREFIX = `Conversation flow (follow this guidance):
+const FLOW_INSTRUCTION_PREFIX = `Conversation flow (generative—do not paste):
+The flow below describes what to do at each step. For the step that matches the user's message, use its text as INSTRUCTIONS only: generate a natural, conversational reply that follows that guidance. Use the Context/knowledge base when relevant. Never output the instruction text verbatim.
+
 {flow_instruction}
 
 `;
 
-/** Get the start node's prompt from a flow definition for chat guidance */
-export function getFlowStartInstruction(flowDefinition: unknown): string | null {
+type FlowNode = { id: string; data?: { prompt?: string; label?: string; nodeType?: string } };
+type FlowEdge = { source: string; target: string; label?: string };
+
+/** Build full flow instruction from all nodes and edges so the bot follows every branch (e.g. not_interested). */
+export function getFlowInstruction(flowDefinition: unknown): string | null {
   if (!flowDefinition || typeof flowDefinition !== 'object') return null;
-  const flow = flowDefinition as { nodes?: Array<{ id: string; data?: { prompt?: string } }> };
+  const flow = flowDefinition as {
+    nodes?: FlowNode[];
+    edges?: FlowEdge[];
+  };
   const nodes = flow.nodes;
+  const edges = flow.edges ?? [];
   if (!Array.isArray(nodes) || nodes.length === 0) return null;
-  const start = nodes.find((n) => n.id === 'start');
-  if (!start?.data?.prompt) return null;
-  return start.data.prompt.trim();
+
+  const lines: string[] = [
+    'Pick the step that fits the conversation (e.g. "start" for first message). Based on the user\'s last message, choose the matching branch. For that step, generate a natural reply that follows the guidance below—do not repeat the guidance word-for-word.',
+    '',
+  ];
+  const nodeById = new Map(nodes.map((n) => [n.id, n]));
+
+  for (const n of nodes) {
+    const prompt = n.data?.prompt?.trim();
+    if (!prompt) continue;
+    const label = n.data?.label ?? n.id;
+    const outgoing = edges.filter((e) => e.source === n.id);
+    lines.push(`**${label}** — Guidance (generate a response that does this): ${prompt}`);
+    if (outgoing.length > 0) {
+      const branches = outgoing
+        .map((e) => {
+          const cond = e.label?.trim() || 'User responds';
+          const targetNode = nodeById.get(e.target);
+          const targetLabel = targetNode?.data?.label ?? e.target;
+          return `- If "${cond}" → follow the "${targetLabel}" step.`;
+        })
+        .join('\n');
+      lines.push(branches);
+    }
+    lines.push('');
+  }
+
+  const text = lines.join('\n').trim();
+  return text || null;
+}
+
+/** @deprecated Use getFlowInstruction for full flow; only start node was used before. */
+export function getFlowStartInstruction(flowDefinition: unknown): string | null {
+  return getFlowInstruction(flowDefinition);
 }
 
 export async function buildSystemPrompt(
