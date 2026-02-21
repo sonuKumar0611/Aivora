@@ -12,11 +12,13 @@ import {
 } from '../services/openai';
 import { findSimilarChunks } from '../services/vectorSearch';
 import { buildSystemPrompt, getChatCompletion, getFlowInstruction } from '../services/chatCompletion';
+import { aggregateSentiment } from '../services/sentiment';
 import { env } from '../utils/env';
 
 const chatSchema = z.object({
   message: z.string().min(1, 'Message is required'),
   conversationId: z.string().optional(),
+  sessionId: z.string().optional(),
 });
 
 /**
@@ -93,8 +95,12 @@ export async function chat(req: AuthRequest, res: Response, next: NextFunction):
       chatDoc = await Chat.create({
         botId: bot._id,
         userId: userId || undefined,
+        sessionId: body.sessionId ?? undefined,
         messages: [],
       });
+    }
+    if (body.sessionId && !chatDoc.sessionId) {
+      (chatDoc as { sessionId?: string }).sessionId = body.sessionId;
     }
 
     const historyMessages = chatDoc.messages
@@ -102,7 +108,7 @@ export async function chat(req: AuthRequest, res: Response, next: NextFunction):
       .slice(-20)
       .map((m: { role: string; content: string }) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
 
-    const reply = await getChatCompletion(
+    const completion = await getChatCompletion(
       systemPrompt,
       [
         ...historyMessages,
@@ -110,11 +116,31 @@ export async function chat(req: AuthRequest, res: Response, next: NextFunction):
       ],
       openaiKey
     );
+    const reply = completion.content;
 
     chatDoc.messages.push(
       { role: 'user', content: body.message, timestamp: new Date() },
       { role: 'assistant', content: reply, timestamp: new Date() }
     );
+
+    // Accumulate token usage
+    const existing = (chatDoc as { tokenUsage?: { promptTokens: number; completionTokens: number; totalTokens: number } }).tokenUsage;
+    const prev = existing
+      ? { promptTokens: existing.promptTokens, completionTokens: existing.completionTokens, totalTokens: existing.totalTokens }
+      : { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
+    (chatDoc as { tokenUsage?: { promptTokens: number; completionTokens: number; totalTokens: number } }).tokenUsage = {
+      promptTokens: prev.promptTokens + completion.usage.promptTokens,
+      completionTokens: prev.completionTokens + completion.usage.completionTokens,
+      totalTokens: prev.totalTokens + completion.usage.totalTokens,
+    };
+
+    // Sentiment: analyze full conversation text (user + assistant messages only)
+    const textsForSentiment = chatDoc.messages
+      .filter((m: { role: string }) => m.role === 'user' || m.role === 'assistant')
+      .map((m: { content: string }) => m.content);
+    const sentiment = aggregateSentiment(textsForSentiment);
+    (chatDoc as { sentiment?: { positive: number; negative: number; neutral: number } }).sentiment = sentiment;
+
     await chatDoc.save();
 
     res.json({
@@ -209,9 +235,12 @@ export async function getConversation(req: AuthRequest, res: Response, next: Nex
       res.status(404).json({ error: 'Not found', message: 'Conversation not found' });
       return;
     }
+    const c = chat as { messages: { role: string; content: string; timestamp: Date }[]; sentiment?: { positive: number; negative: number; neutral: number }; tokenUsage?: { promptTokens: number; completionTokens: number; totalTokens: number } };
     res.json({
       data: {
-        messages: chat.messages.map((m) => ({ role: m.role, content: m.content, timestamp: m.timestamp })),
+        messages: c.messages.map((m) => ({ role: m.role, content: m.content, timestamp: m.timestamp })),
+        sentiment: c.sentiment ?? null,
+        tokenUsage: c.tokenUsage ?? null,
       },
       message: 'OK',
     });

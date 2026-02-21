@@ -7,6 +7,7 @@ export interface SendMessageParams {
   botId: string;
   message: string;
   conversationId?: string;
+  sessionId?: string;
 }
 
 export interface SendMessageResult {
@@ -16,7 +17,7 @@ export interface SendMessageResult {
 
 export function useSendMessage() {
   return useMutation({
-    mutationFn: async ({ botId, message, conversationId }: SendMessageParams): Promise<SendMessageResult> => {
+    mutationFn: async ({ botId, message, conversationId, sessionId }: SendMessageParams): Promise<SendMessageResult> => {
       const apiUrl = getApiUrl();
       const token = typeof window !== 'undefined' ? localStorage.getItem('aivora_token') : null;
       const res = await fetch(`${apiUrl}/api/chat/${botId}`, {
@@ -25,7 +26,7 @@ export function useSendMessage() {
           'Content-Type': 'application/json',
           ...(token && { Authorization: `Bearer ${token}` }),
         },
-        body: JSON.stringify({ message, conversationId }),
+        body: JSON.stringify({ message, conversationId, sessionId }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Send failed');

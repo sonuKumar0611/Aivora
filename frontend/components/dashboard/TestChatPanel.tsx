@@ -52,6 +52,7 @@ export function TestChatPanel({ preselectedBotId, preselectedAgentId, embedded =
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const sessionIdRef = useRef<string>(typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `session-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
   const sendMessage = useSendMessage();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -79,6 +80,7 @@ export function TestChatPanel({ preselectedBotId, preselectedAgentId, embedded =
         botId: effectiveBotId,
         message: text,
         conversationId: conversationId || undefined,
+        sessionId: sessionIdRef.current,
       },
       {
         onSuccess: (data) => {

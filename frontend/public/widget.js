@@ -6,6 +6,7 @@
   if (!botId || !apiBase) return;
 
   var conversationId = null;
+  var sessionId = 'w-' + Date.now() + '-' + Math.random().toString(36).slice(2, 11);
   var botName = 'Chat';
 
   /* Theme: Aivora brand – violet primary, soft backgrounds */
@@ -118,7 +119,7 @@
     inputEl.value = '';
     appendMessage('user', text);
     setLoading(true);
-    var payload = { message: text };
+    var payload = { message: text, sessionId: sessionId };
     if (conversationId) payload.conversationId = conversationId;
     fetch(apiBase + '/api/chat/' + botId, {
       method: 'POST',

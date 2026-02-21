@@ -88,11 +88,16 @@ export async function buildSystemPrompt(
   return base;
 }
 
+export interface ChatCompletionResult {
+  content: string;
+  usage: { promptTokens: number; completionTokens: number; totalTokens: number };
+}
+
 export async function getChatCompletion(
   systemPrompt: string,
   messages: { role: 'user' | 'assistant'; content: string }[],
   apiKey?: string | null
-): Promise<string> {
+): Promise<ChatCompletionResult> {
   const openai = getOpenAI(apiKey);
   const response = await openai.chat.completions.create({
     model: 'gpt-4o',
@@ -103,5 +108,13 @@ export async function getChatCompletion(
     max_tokens: 1024,
   });
   const choice = response.choices[0];
-  return choice?.message?.content?.trim() ?? '';
+  const content = choice?.message?.content?.trim() ?? '';
+  const usage = response.usage
+    ? {
+        promptTokens: response.usage.prompt_tokens ?? 0,
+        completionTokens: response.usage.completion_tokens ?? 0,
+        totalTokens: response.usage.total_tokens ?? 0,
+      }
+    : { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
+  return { content, usage };
 }

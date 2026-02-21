@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useBot, useBots } from '@/hooks/useBots';
 import { useKnowledge } from '@/hooks/useKnowledge';
@@ -14,7 +14,8 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { TONE_OPTIONS, AGENT_TYPE_OPTIONS } from '@/lib/constants';
 import toast from 'react-hot-toast';
 import { getErrorMessage } from '@/lib/api';
-import { ArrowLeft, Code, BookOpen, User, Settings, MessageSquare, BarChart3, MessageCircle, GitBranch } from 'lucide-react';
+import { formatConversationDate } from '@/lib/format';
+import { ArrowLeft, Code, BookOpen, User, Settings, MessageSquare, BarChart3, MessageCircle, GitBranch, Coins, Smile, Frown, Meh, Calendar, Eye } from 'lucide-react';
 import { TestChatPanel } from '@/components/dashboard/TestChatPanel';
 import type { FlowDefinition } from '@/lib/flow';
 
@@ -38,6 +39,7 @@ type TabId = 'profile' | 'kb' | 'flow' | 'chat' | 'preview' | 'settings' | 'anal
 export default function AgentEditPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const id = params.id as string;
   const { bot, isLoading, isError, refetch } = useBot(id);
   const { updateBot, deleteBot, publishBot } = useBots();
@@ -45,13 +47,22 @@ export default function AgentEditPage() {
   const {
     totalConversations,
     totalMessages,
+    totalTokenUsage,
     dailyUsage,
-    topKeywords,
+    dailyTokenUsage,
+    sessions,
     isLoading: analyticsLoading,
     isError: analyticsError,
     refetch: refetchAnalytics,
   } = useAnalytics(id);
   const [activeTab, setActiveTab] = useState<TabId>('profile');
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && ['profile', 'kb', 'flow', 'chat', 'preview', 'settings', 'analytics'].includes(tab)) {
+      setActiveTab(tab as TabId);
+    }
+  }, [searchParams]);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -409,7 +420,8 @@ export default function AgentEditPage() {
         <div className="space-y-6">
           {analyticsLoading ? (
             <>
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-3">
+                <Skeleton className="h-24 rounded-xl" />
                 <Skeleton className="h-24 rounded-xl" />
                 <Skeleton className="h-24 rounded-xl" />
               </div>
@@ -428,7 +440,7 @@ export default function AgentEditPage() {
             </Card>
           ) : (
             <>
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-3">
                 <Card>
                   <CardContent className="p-6">
                     <div className="flex items-center gap-3">
@@ -459,61 +471,152 @@ export default function AgentEditPage() {
                     </div>
                   </CardContent>
                 </Card>
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-lg bg-brand-border p-3">
+                        <Coins className="w-6 h-6 text-brand-textMuted" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-semibold text-brand-textHeading">
+                          {totalTokenUsage.totalTokens.toLocaleString()}
+                        </p>
+                        <p className="text-sm text-brand-textMuted">Token usage (this agent)</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid gap-6 lg:grid-cols-2">
+                <Card>
+                  <CardHeader>
+                    <h2 className="font-semibold text-brand-textHeading">Daily usage</h2>
+                    <p className="text-sm text-brand-textMuted">Conversations per day (last 30 days)</p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-64">
+                      {dailyUsage.length === 0 ? (
+                        <div className="h-full flex items-center justify-center text-brand-textMuted text-sm">
+                          No data yet
+                        </div>
+                      ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={dailyUsage} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" className="stroke-brand-border" />
+                            <XAxis dataKey="date" tick={{ fontSize: 12 }} className="text-brand-textMuted" />
+                            <YAxis tick={{ fontSize: 12 }} className="text-brand-textMuted" />
+                            <Tooltip
+                              contentStyle={{
+                                backgroundColor: 'hsl(var(--card))',
+                                border: '1px solid hsl(var(--border))',
+                                borderRadius: '8px',
+                              }}
+                              labelStyle={{ color: 'hsl(var(--card-foreground))' }}
+                            />
+                            <Bar dataKey="conversations" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <h2 className="font-semibold text-brand-textHeading">Daily token usage</h2>
+                    <p className="text-sm text-brand-textMuted">Tokens per day (last 30 days)</p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-64">
+                      {dailyTokenUsage.length === 0 ? (
+                        <div className="h-full flex items-center justify-center text-brand-textMuted text-sm">
+                          No data yet
+                        </div>
+                      ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={dailyTokenUsage} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" className="stroke-brand-border" />
+                            <XAxis dataKey="date" tick={{ fontSize: 12 }} className="text-brand-textMuted" />
+                            <YAxis tick={{ fontSize: 12 }} className="text-brand-textMuted" />
+                            <Tooltip
+                              contentStyle={{
+                                backgroundColor: 'hsl(var(--card))',
+                                border: '1px solid hsl(var(--border))',
+                                borderRadius: '8px',
+                              }}
+                              labelStyle={{ color: 'hsl(var(--card-foreground))' }}
+                            />
+                            <Bar dataKey="totalTokens" name="Tokens" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
 
               <Card>
                 <CardHeader>
-                  <h2 className="font-semibold text-brand-textHeading">Daily usage</h2>
-                  <p className="text-sm text-brand-textMuted">Conversations per day (last 30 days)</p>
+                  <h2 className="font-semibold text-brand-textHeading flex items-center gap-2">
+                    <Calendar className="w-4 h-4" /> Conversation sessions
+                  </h2>
+                  <p className="text-sm text-brand-textMuted">Track recent chat sessions with this agent</p>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-64">
-                    {dailyUsage.length === 0 ? (
-                      <div className="h-full flex items-center justify-center text-brand-textMuted text-sm">
-                        No data yet
-                      </div>
-                    ) : (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={dailyUsage} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" className="stroke-brand-border" />
-                          <XAxis dataKey="date" tick={{ fontSize: 12 }} className="text-brand-textMuted" />
-                          <YAxis tick={{ fontSize: 12 }} className="text-brand-textMuted" />
-                          <Tooltip
-                            contentStyle={{
-                              backgroundColor: 'hsl(var(--card))',
-                              border: '1px solid hsl(var(--border))',
-                              borderRadius: '8px',
-                            }}
-                            labelStyle={{ color: 'hsl(var(--card-foreground))' }}
-                          />
-                          <Bar dataKey="conversations" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <h2 className="font-semibold text-brand-textHeading">Most asked topics</h2>
-                  <p className="text-sm text-brand-textMuted">Keyword frequency in messages</p>
-                </CardHeader>
-                <CardContent>
-                  {topKeywords.length === 0 ? (
-                    <p className="text-sm text-brand-textMuted">No keywords yet. Chat with your agent to see trends.</p>
+                  {sessions.length === 0 ? (
+                    <p className="text-sm text-brand-textMuted">No sessions yet. Conversations will appear here.</p>
                   ) : (
-                    <ul className="flex flex-wrap gap-2">
-                      {topKeywords.map((k) => (
-                        <li
-                          key={k.word}
-                          className="rounded-lg bg-brand-border px-3 py-1.5 text-sm text-brand-textHeading"
-                        >
-                          <span className="font-medium">{k.word}</span>
-                          <span className="ml-1 text-brand-textMuted">({k.count})</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="overflow-x-auto rounded-lg border border-brand-borderLight">
+                      <table className="w-full text-sm text-left">
+                        <thead className="bg-brand-sidebar text-brand-textMuted">
+                          <tr>
+                            <th className="px-4 py-3 font-medium">Date</th>
+                            <th className="px-4 py-3 font-medium">Messages</th>
+                            <th className="px-4 py-3 font-medium">Tokens</th>
+                            <th className="px-4 py-3 font-medium">Sentiment</th>
+                            <th className="px-4 py-3 font-medium text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-brand-borderLight">
+                          {sessions.map((s) => {
+                            const dominant = s.sentiment
+                              ? s.sentiment.positive >= s.sentiment.negative && s.sentiment.positive >= s.sentiment.neutral
+                                ? 'positive'
+                                : s.sentiment.negative >= s.sentiment.neutral
+                                  ? 'negative'
+                                  : 'neutral'
+                              : null;
+                            return (
+                              <tr key={s.id} className="bg-brand-bgCard hover:bg-brand-border/50">
+                                <td className="px-4 py-3 text-brand-text">
+                                  {formatConversationDate(s.updatedAt)}
+                                </td>
+                                <td className="px-4 py-3 text-brand-text">{s.messageCount}</td>
+                                <td className="px-4 py-3 text-brand-text">
+                                  {s.tokenUsage?.totalTokens != null ? s.tokenUsage.totalTokens.toLocaleString() : '—'}
+                                </td>
+                                <td className="px-4 py-3">
+                                  {dominant === 'positive' && <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400"><Smile className="w-4 h-4" /> Positive</span>}
+                                  {dominant === 'negative' && <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400"><Frown className="w-4 h-4" /> Negative</span>}
+                                  {(dominant === 'neutral' || !dominant) && <span className="inline-flex items-center gap-1 text-brand-textMuted"><Meh className="w-4 h-4" /> Neutral</span>}
+                                </td>
+                                <td className="px-4 py-3 text-right">
+                                  <Link
+                                    href={`/dashboard/agents/${id}/conversations/${s.id}`}
+                                    className="inline-flex items-center justify-center w-9 h-9 rounded-md text-brand-primary hover:bg-brand-border"
+                                    title="View conversation"
+                                    aria-label="View conversation"
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </Link>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                   )}
                 </CardContent>
               </Card>
