@@ -26,6 +26,7 @@ function toBotResponse(bot: IBot | (Omit<IBot, keyof mongoose.Document> & { _id:
     assignedSourceIds: (b.assignedSourceIds || []).map((id) => id.toString()),
     flowDefinition: (b as { flowDefinition?: { nodes: unknown[]; edges: unknown[] } }).flowDefinition ?? { nodes: [], edges: [] },
     status: (b as { status?: string }).status ?? 'draft',
+    isActive: (b as { isActive?: boolean }).isActive !== false,
     createdAt: b.createdAt,
     updatedAt: b.updatedAt,
   };
@@ -70,6 +71,7 @@ const updateBotSchema = z.object({
   assignedSourceIds: z.array(z.string().min(1)).optional(),
   flowDefinition: flowDefinitionSchema.optional(),
   status: z.enum(['draft', 'published']).optional(),
+  isActive: z.boolean().optional(),
 });
 
 export async function listBots(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
@@ -88,6 +90,7 @@ export async function listBots(req: AuthRequest, res: Response, next: NextFuncti
           assignedSourceIds: (b.assignedSourceIds || []).map((id) => id.toString()),
           flowDefinition: (b as { flowDefinition?: { nodes: unknown[]; edges: unknown[] } }).flowDefinition ?? { nodes: [], edges: [] },
           status: (b as { status?: string }).status ?? 'draft',
+          isActive: (b as { isActive?: boolean }).isActive !== false,
           createdAt: b.createdAt,
           updatedAt: b.updatedAt,
         })),
@@ -137,6 +140,7 @@ export async function createBot(req: AuthRequest, res: Response, next: NextFunct
       systemPrompt: body.systemPrompt ?? '',
       assignedSourceIds: sourceObjectIds,
       status,
+      isActive: status === 'published',
     });
     res.status(201).json({
       data: {
@@ -253,6 +257,7 @@ export async function publishBot(req: AuthRequest, res: Response, next: NextFunc
       return;
     }
     bot.status = 'published';
+    (bot as { isActive?: boolean }).isActive = true;
     await bot.save();
     res.json({
       data: { bot: toBotResponse(bot) },

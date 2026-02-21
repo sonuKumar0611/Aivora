@@ -51,6 +51,7 @@ export function useBots() {
       assignedSourceIds?: string[];
       flowDefinition?: import('@/lib/flow').FlowDefinition;
       status?: 'draft' | 'published';
+      isActive?: boolean;
     }) => {
       const { data } = await api.put<{ data: { bot: Bot } }>(`/bots/${id}`, body);
       return data.data.bot;

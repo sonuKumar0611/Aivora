@@ -148,6 +148,8 @@ export interface Bot {
   assignedSourceIds: string[];
   flowDefinition?: FlowDefinition;
   status: 'draft' | 'published';
+  /** When false, published agent returns inactive message. Ignored for draft. Default true. */
+  isActive?: boolean;
   createdAt: string;
   updatedAt: string;
 }

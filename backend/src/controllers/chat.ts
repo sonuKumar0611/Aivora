@@ -36,10 +36,49 @@ export async function chat(req: AuthRequest, res: Response, next: NextFunction):
       return;
     }
     const status = (bot as { status?: string }).status ?? 'draft';
+    const isActive = (bot as { isActive?: boolean }).isActive !== false;
     if (!req.user && status !== 'published') {
       res.status(403).json({
         error: 'Forbidden',
         message: 'This bot is not published. Publish it in the dashboard to use the embed script.',
+      });
+      return;
+    }
+    if (status === 'published' && !isActive) {
+      const inactiveMessage = 'This agent is currently inactive.';
+      let chatDoc = null;
+      if (body.conversationId) {
+        chatDoc = await Chat.findOne({
+          _id: body.conversationId,
+          botId: bot._id,
+        });
+      }
+      if (!chatDoc) {
+        const userId = req.user?.id ? new mongoose.Types.ObjectId(req.user.id) : null;
+        chatDoc = await Chat.create({
+          botId: bot._id,
+          userId: userId || undefined,
+          sessionId: body.sessionId ?? undefined,
+          messages: [
+            { role: 'user', content: body.message, timestamp: new Date() },
+            { role: 'assistant', content: inactiveMessage, timestamp: new Date() },
+          ],
+        });
+      } else {
+        chatDoc.messages.push(
+          { role: 'user', content: body.message, timestamp: new Date() },
+          { role: 'assistant', content: inactiveMessage, timestamp: new Date() }
+        );
+        await chatDoc.save();
+      }
+      res.json({
+        data: {
+          reply: inactiveMessage,
+          conversationId: chatDoc._id.toString(),
+          messageId: undefined,
+          inactive: true,
+        },
+        message: 'OK',
       });
       return;
     }

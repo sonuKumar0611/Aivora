@@ -229,7 +229,7 @@ export default function AgentEditPage() {
             disabled={publishBot.isPending || selectedSourceIds.length === 0}
             className="shrink-0"
           >
-            {publishBot.isPending ? 'Publishing…' : 'Publish'}
+            {publishBot.isPending ? 'Publishing…' : 'Publish agent'}
           </Button>
         )}
       </div>
@@ -659,36 +659,76 @@ export default function AgentEditPage() {
             >
               Copy embed code
             </Button>
-            {status !== 'published' && (
-              <div className="pt-6 border-t border-brand-borderLight flex justify-end">
-                <Button
-                  onClick={handlePublish}
-                  disabled={publishBot.isPending || selectedSourceIds.length === 0}
-                >
-                  {publishBot.isPending ? 'Publishing…' : 'Publish agent'}
-                </Button>
-              </div>
-            )}
           </CardContent>
         </Card>
       )}
 
       {/* Tab: Settings */}
       {activeTab === 'settings' && (
-        <Card className="border-red-200 dark:border-red-900/50">
-          <CardHeader className="pb-2">
-            <h2 className="font-semibold text-red-600 dark:text-red-400">Danger zone</h2>
-            <p className="text-sm text-brand-textMuted mt-2">Irreversible actions for this agent.</p>
-          </CardHeader>
-          <CardContent className="pt-6 pb-8">
-            <p className="text-sm text-brand-textMuted mb-4">
-              Deleting this agent will remove its chat history. This cannot be undone.
-            </p>
-            <Button variant="danger" onClick={handleDelete} disabled={deleteBot.isPending}>
-              {deleteBot.isPending ? 'Deleting…' : 'Delete agent'}
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="space-y-6">
+          <Card>
+            <CardHeader className="pb-2">
+              <h2 className="font-semibold text-brand-textHeading">Execution</h2>
+              <p className="text-sm text-brand-textMuted mt-2">
+                {status === 'published'
+                  ? 'When off, the agent will not respond and visitors will see that it is inactive.'
+                  : 'Publish the agent to enable or disable execution.'}
+              </p>
+            </CardHeader>
+            <CardContent className="pt-6 pb-8">
+              <div className="flex items-center justify-between gap-4">
+                <label
+                  htmlFor="execution-toggle"
+                  className={`text-sm font-medium ${status !== 'published' ? 'text-brand-textMuted cursor-not-allowed' : 'text-brand-text cursor-pointer'}`}
+                >
+                  Allow agent to respond
+                </label>
+                <button
+                  id="execution-toggle"
+                  type="button"
+                  role="switch"
+                  aria-checked={bot?.isActive !== false}
+                  disabled={status !== 'published' || updateBot.isPending}
+                  onClick={() => {
+                    if (status !== 'published') return;
+                    const next = bot?.isActive === false;
+                    updateBot.mutate(
+                      { id, isActive: next },
+                      {
+                        onSuccess: () => toast.success(next ? 'Agent is now active' : 'Agent is now inactive'),
+                        onError: (e) => toast.error(getErrorMessage(e)),
+                      }
+                    );
+                  }}
+                  className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border border-brand-border transition-colors focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 ${
+                    status !== 'published' ? 'bg-brand-borderLight' : (bot?.isActive !== false ? 'bg-brand-primary' : 'bg-brand-border')
+                  }`}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition-transform ${
+                      bot?.isActive !== false ? 'translate-x-[22px]' : 'translate-x-0.5'
+                    }`}
+                    style={{ marginTop: 2 }}
+                  />
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-red-200 dark:border-red-900/50">
+            <CardHeader className="pb-2">
+              <h2 className="font-semibold text-red-600 dark:text-red-400">Danger zone</h2>
+              <p className="text-sm text-brand-textMuted mt-2">Irreversible actions for this agent.</p>
+            </CardHeader>
+            <CardContent className="pt-6 pb-8">
+              <p className="text-sm text-brand-textMuted mb-4">
+                Deleting this agent will remove its chat history. This cannot be undone.
+              </p>
+              <Button variant="danger" onClick={handleDelete} disabled={deleteBot.isPending}>
+                {deleteBot.isPending ? 'Deleting…' : 'Delete agent'}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       <ConfirmModal

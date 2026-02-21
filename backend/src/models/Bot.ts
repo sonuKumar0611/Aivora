@@ -42,6 +42,8 @@ export interface IBot extends Document {
   assignedSourceIds: mongoose.Types.ObjectId[];
   flowDefinition?: IFlowDefinition;
   status: 'draft' | 'published';
+  /** When true, published agent responds to chat. When false, returns inactive message. Ignored for draft. */
+  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -91,6 +93,7 @@ const botSchema = new Schema<IBot>(
     assignedSourceIds: { type: [Schema.Types.ObjectId], ref: 'KnowledgeSource', default: [] },
     flowDefinition: { type: flowDefinitionSchema, default: () => ({ nodes: [], edges: [] }) },
     status: { type: String, enum: ['draft', 'published'], default: 'draft' },
+    isActive: { type: Boolean, default: true },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
   },
