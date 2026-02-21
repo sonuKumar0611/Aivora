@@ -111,10 +111,28 @@ function FlowBuilderInner({
     );
   }, [setNodes]);
 
-  const onConnect = useCallback(
-    (connection: Connection) => setEdges((eds) => addEdge(connection, eds)),
-    [setEdges]
-  );
+  const onDeleteNode = useCallback((nodeId: string) => {
+    setNodes((nds) => nds.filter((n) => n.id !== nodeId));
+    setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
+  }, [setNodes, setEdges]);
+
+  const selectedEdge = edges.find((e) => e.selected);
+  const selectedEdgeLabel = (selectedEdge && (selectedEdge as Edge & { label?: string }).label) ?? '';
+
+  const onConnect = useCallback((connection: Connection) => {
+    setEdges((eds) => {
+      const next = addEdge(connection, eds);
+      // New edge is the one just added; give it a default label so every connection has an editable condition
+      const prevIds = new Set(eds.map((e) => e.id));
+      const added = next.find((e) => !prevIds.has(e.id));
+      if (added) {
+        return next.map((e) =>
+          e.id === added.id ? { ...e, label: 'Set condition...' } as Edge : e
+        );
+      }
+      return next;
+    });
+  }, [setEdges]);
 
   const onDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -158,14 +176,20 @@ function FlowBuilderInner({
   }, [nodes, edges, onSave]);
 
   return (
-    <FlowBuilderProvider onNodeDataChange={onNodeDataChange}>
+    <FlowBuilderProvider onNodeDataChange={onNodeDataChange} onDeleteNode={onDeleteNode}>
       <div className="flex h-[calc(100vh-12rem)] min-h-[500px] rounded-xl border border-brand-border overflow-hidden bg-brand-sidebar">
         {/* Left sidebar */}
-        <div className="w-56 shrink-0 border-r border-brand-border bg-brand-bgCard p-4 flex flex-col gap-6">
+        <div className="w-56 shrink-0 border-r border-brand-border bg-brand-bgCard p-4 flex flex-col gap-6 overflow-y-auto">
           <div>
             <h3 className="text-sm font-semibold text-brand-textHeading mb-1">Basic information</h3>
             <p className="text-xs text-brand-textMuted">
               Configure the conversation flow for your chat agent. Drag nodes onto the canvas.
+            </p>
+            <p className="text-xs text-brand-textMuted mt-1.5">
+              Select a node and click the × on it, or press <kbd className="px-1 py-0.5 rounded bg-brand-border text-[10px]">Delete</kbd> to remove.
+            </p>
+            <p className="text-xs text-brand-textMuted mt-1.5">
+              <strong>Conditions:</strong> Click a connection line between nodes, then edit the condition in the box below.
             </p>
           </div>
           <Button onClick={handleSave} disabled={isSaving} className="w-full gap-2">
@@ -209,6 +233,36 @@ function FlowBuilderInner({
               })}
             </div>
           </div>
+
+          {/* Edit condition: always show so users know how to edit; expand when an edge is selected */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold text-brand-textHeading">Condition</h3>
+            {selectedEdge ? (
+              <>
+                <p className="text-xs text-brand-textMuted">
+                  Editing the condition for the selected connection. Change when this path is taken.
+                </p>
+                <input
+                  type="text"
+                  value={selectedEdgeLabel}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setEdges((eds) =>
+                      eds.map((ed) =>
+                        ed.id === selectedEdge.id ? { ...ed, label: value } as Edge : ed
+                      )
+                    );
+                  }}
+                  placeholder="e.g. Qualified lead, User confirms"
+                  className="w-full rounded-lg border border-brand-borderLight bg-brand-sidebar px-3 py-2 text-sm text-brand-text placeholder:text-brand-textMuted focus:ring-2 focus:ring-brand-primary"
+                />
+              </>
+            ) : (
+              <p className="text-xs text-brand-textMuted">
+                Click a <strong>connection line</strong> between two nodes on the canvas to select it, then this box will let you add or edit the condition (e.g. &quot;Qualified lead&quot;, &quot;User confirms&quot;).
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Canvas */}
@@ -226,7 +280,15 @@ function FlowBuilderInner({
             className="bg-brand-sidebar"
             minZoom={0.2}
             maxZoom={1.5}
-            defaultEdgeOptions={{ type: 'smoothstep', animated: true }}
+            defaultEdgeOptions={{
+              type: 'smoothstep',
+              animated: true,
+              labelShowBg: true,
+              labelBgStyle: { fill: 'hsl(var(--card))', fillOpacity: 1 },
+              labelBgPadding: [8, 4] as [number, number],
+              labelBgBorderRadius: 4,
+              labelStyle: { fill: 'hsl(var(--card-foreground))', fontSize: 11 },
+            }}
             proOptions={{ hideAttribution: true }}
           >
             <Background variant={BackgroundVariant.Dots} gap={16} size={1} className="bg-brand-sidebar" />

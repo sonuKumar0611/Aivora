@@ -1,10 +1,14 @@
 'use client';
 
-import { createContext, useContext, useCallback } from 'react';
+import { createContext, useContext } from 'react';
 
 export type OnNodeDataChange = (nodeId: string, field: string, value: string) => void;
+export type OnDeleteNode = (nodeId: string) => void;
 
-const FlowBuilderContext = createContext<{ onNodeDataChange: OnNodeDataChange } | null>(null);
+const FlowBuilderContext = createContext<{
+  onNodeDataChange: OnNodeDataChange;
+  onDeleteNode: OnDeleteNode;
+} | null>(null);
 
 export function useFlowBuilderContext() {
   const ctx = useContext(FlowBuilderContext);
@@ -13,13 +17,15 @@ export function useFlowBuilderContext() {
 
 export function FlowBuilderProvider({
   onNodeDataChange,
+  onDeleteNode,
   children,
 }: {
   onNodeDataChange: OnNodeDataChange;
+  onDeleteNode: OnDeleteNode;
   children: React.ReactNode;
 }) {
   return (
-    <FlowBuilderContext.Provider value={{ onNodeDataChange }}>
+    <FlowBuilderContext.Provider value={{ onNodeDataChange, onDeleteNode }}>
       {children}
     </FlowBuilderContext.Provider>
   );

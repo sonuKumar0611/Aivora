@@ -2,7 +2,7 @@
 
 import { memo, useCallback } from 'react';
 import { Handle, Position, type NodeProps } from 'reactflow';
-import { MessageCircle, Tag, MessageSquareOff, UserPlus } from 'lucide-react';
+import { MessageCircle, Tag, MessageSquareOff, UserPlus, X } from 'lucide-react';
 import type { FlowNodeData, FlowNodeType } from '@/lib/flow';
 import { clsx } from 'clsx';
 import { useFlowBuilderContext } from './FlowBuilderContext';
@@ -78,25 +78,39 @@ function PromptNodeComponent({ data, selected, id }: NodeProps<FlowNodeData>) {
       )}
     >
       <Handle type="target" position={Position.Top} className="!w-2 !h-2 !bg-brand-primary" />
-      <div className={clsx('flex items-center gap-2 px-3 py-2 text-xs font-medium', config.headerClass)}>
-        <Icon className="w-4 h-4 shrink-0" />
-        <span>{config.label}</span>
+      <div className={clsx('flex items-center justify-between gap-2 px-3 py-2 text-xs font-medium', config.headerClass)}>
+        <div className="flex items-center gap-2 min-w-0">
+          <Icon className="w-4 h-4 shrink-0" />
+          <span>{config.label}</span>
+        </div>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            ctx?.onDeleteNode(id);
+          }}
+          className="shrink-0 p-0.5 rounded hover:bg-white/20 transition-colors"
+          title="Delete node"
+          aria-label="Delete node"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
       </div>
-      <div className="p-3 space-y-2 bg-brand-sidebar/50">
+      <div className="p-3 space-y-2 bg-brand-sidebar/50 text-left">
         {!isEndOrTransfer && (
           <input
             type="text"
             value={label}
             onChange={(e) => onChange(e, 'label')}
             placeholder="Node ID / label"
-            className="w-full rounded border border-brand-borderLight bg-brand-bgCard px-2 py-1 text-xs text-brand-text placeholder:text-brand-textMuted focus:ring-1 focus:ring-brand-primary"
+            className="w-full rounded border border-brand-borderLight bg-brand-bgCard px-2 py-1 text-xs text-brand-text placeholder:text-brand-textMuted focus:ring-1 focus:ring-brand-primary text-left"
           />
         )}
         {(nodeType === 'end_chat' || nodeType === 'end_call') && (
-          <p className="text-xs text-brand-textMuted">Close the conversation or end this branch.</p>
+          <p className="text-xs text-brand-textMuted text-left">Close the conversation or end this branch.</p>
         )}
         {(nodeType === 'transfer_to_human' || nodeType === 'transfer_call') && (
-          <p className="text-xs text-brand-textMuted">Escalate or hand off to a human agent.</p>
+          <p className="text-xs text-brand-textMuted text-left">Escalate or hand off to a human agent.</p>
         )}
         {hasPrompt && (
           <textarea
@@ -104,7 +118,7 @@ function PromptNodeComponent({ data, selected, id }: NodeProps<FlowNodeData>) {
             onChange={(e) => onChange(e, 'prompt')}
             placeholder="What the agent should say or do..."
             rows={4}
-            className="w-full rounded border border-brand-borderLight bg-brand-bgCard px-2 py-1.5 text-xs text-brand-text placeholder:text-brand-textMuted focus:ring-1 focus:ring-brand-primary resize-y"
+            className="w-full rounded border border-brand-borderLight bg-brand-bgCard px-2 py-1.5 text-xs text-brand-text placeholder:text-brand-textMuted focus:ring-1 focus:ring-brand-primary resize-y text-left"
           />
         )}
       </div>
