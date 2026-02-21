@@ -10,6 +10,7 @@ router.get('/', botsController.listBots);
 router.post('/', botsController.createBot);
 router.get('/:id', botsController.getBot);
 router.put('/:id', botsController.updateBot);
+router.post('/:id/generate-flow', botsController.generateFlow);
 router.post('/:id/publish', botsController.publishBot);
 router.delete('/:id', botsController.deleteBot);
 

@@ -3,7 +3,16 @@ import mongoose from 'mongoose';
 import { z } from 'zod';
 import { Bot, IBot } from '../models/Bot';
 import { KnowledgeSource } from '../models/KnowledgeSource';
+import { KnowledgeChunk } from '../models/KnowledgeChunk';
+import { User } from '../models/User';
 import { AuthRequest } from '../middleware/auth';
+import {
+  generateFlowWithAI,
+  buildKnowledgeSummary,
+  type GeneratedFlow,
+} from '../services/generateFlow';
+import { getOpenAIKeyForOrganization, resolveOpenAIKey } from '../services/openai';
+import { env } from '../utils/env';
 
 function toBotResponse(bot: IBot | (Omit<IBot, keyof mongoose.Document> & { _id: mongoose.Types.ObjectId })) {
   const b = bot as IBot & { _id: mongoose.Types.ObjectId };
@@ -266,6 +275,62 @@ export async function deleteBot(req: AuthRequest, res: Response, next: NextFunct
     const { Chat } = await import('../models/Chat');
     await Chat.deleteMany({ botId: bot._id });
     res.json({ data: null, message: 'Bot deleted' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** GET /api/bots/:id/generate-flow - Generate flow using AI from bot profile and knowledge base */
+export async function generateFlow(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const userId = req.user!.id;
+    const { id } = req.params;
+    const bot = await Bot.findOne({ _id: id, userId }).lean();
+    if (!bot) {
+      res.status(404).json({ error: 'Not found', message: 'Bot not found' });
+      return;
+    }
+
+    let organizationId: string | null = req.user?.organizationId ?? null;
+    if (!organizationId && bot.userId) {
+      const owner = await User.findById(bot.userId).select('organizationId').lean();
+      organizationId = owner?.organizationId?.toString() ?? null;
+    }
+    const orgKey = organizationId ? await getOpenAIKeyForOrganization(organizationId) : null;
+    const openaiKey = resolveOpenAIKey(env.OPENAI_API_KEY, orgKey);
+    if (!openaiKey) {
+      res.status(503).json({
+        error: 'Service unavailable',
+        message: 'Add an OpenAI API key in Settings or set OPENAI_API_KEY to generate flows with AI.',
+      });
+      return;
+    }
+
+    const profile = {
+      name: bot.name,
+      description: bot.description,
+      tone: bot.tone,
+      botType: (bot as { botType?: string }).botType ?? 'support',
+      systemPrompt: (bot as { systemPrompt?: string }).systemPrompt,
+    };
+
+    let knowledgeSummary = 'No knowledge base content yet.';
+    const sourceIds = bot.assignedSourceIds || [];
+    if (sourceIds.length > 0) {
+      const chunks = await KnowledgeChunk.find({ sourceId: { $in: sourceIds } })
+        .select('text')
+        .limit(25)
+        .lean();
+      const texts = chunks.map((c) => c.text);
+      knowledgeSummary = buildKnowledgeSummary(texts);
+    }
+
+    const flow: GeneratedFlow = await generateFlowWithAI(profile, knowledgeSummary, openaiKey);
+
+    res.json({
+      data: { flow },
+      message: 'Flow generated',
+    });
   } catch (err) {
     next(err);
   }

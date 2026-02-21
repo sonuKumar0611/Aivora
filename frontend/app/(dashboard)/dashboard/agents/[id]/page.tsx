@@ -390,6 +390,7 @@ export default function AgentEditPage() {
           initialFlow={bot?.flowDefinition as FlowDefinition | undefined}
           botType={botType}
           description={description}
+          botId={id}
           onSave={(flow: FlowDefinition) => {
             updateBot.mutate(
               { id, flowDefinition: flow },

@@ -152,6 +152,14 @@ export interface Bot {
   updatedAt: string;
 }
 
+/** Generate a flow using AI from bot profile and knowledge base. */
+export async function generateFlowFromAI(botId: string): Promise<FlowDefinition> {
+  const { data } = await api.post<{ data: { flow: FlowDefinition } }>(
+    `/bots/${botId}/generate-flow`
+  );
+  return data!.data!.flow;
+}
+
 export type IntegrationProvider = 'google_calendar' | 'google_sheets';
 
 export interface IntegrationItem {

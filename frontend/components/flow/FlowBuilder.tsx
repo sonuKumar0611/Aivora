@@ -18,11 +18,15 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import type { FlowDefinition } from '@/lib/flow';
 import { generateInitialFlow } from '@/lib/generateFlow';
+import { generateFlowFromAI } from '@/lib/api';
 import { FlowBuilderProvider } from './FlowBuilderContext';
 import { PromptNode } from './PromptNode';
 import { Button } from '@/components/ui/Button';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { MessageCircle, MessageSquareOff, UserPlus, Save, Sparkles } from 'lucide-react';
 import { clsx } from 'clsx';
+import toast from 'react-hot-toast';
+import { getErrorMessage } from '@/lib/api';
 
 const nodeTypes = { prompt: PromptNode };
 
@@ -75,12 +79,14 @@ function FlowBuilderInner({
   initialFlow,
   botType,
   description,
+  botId,
   onSave,
   isSaving,
 }: {
   initialFlow: FlowDefinition | null | undefined;
   botType: string;
   description: string;
+  botId?: string;
   onSave: (flow: FlowDefinition) => void;
   isSaving: boolean;
 }) {
@@ -93,6 +99,8 @@ function FlowBuilderInner({
   const [nodes, setNodes, onNodesChange] = useNodesState(initNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initEdges);
   const [hasGenerated, setHasGenerated] = useState(hasInitial);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [regenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
   const dragRef = useRef<{ type: string; nodeType: string } | null>(null);
 
   // Sync from server when initialFlow loads after mount (e.g. bot loaded late)
@@ -162,13 +170,41 @@ function FlowBuilderInner({
     [screenToFlowPosition, setNodes]
   );
 
+  const doGenerate = useCallback(async () => {
+    setRegenerateConfirmOpen(false);
+    setIsGenerating(true);
+    try {
+      let flow: FlowDefinition;
+      if (botId) {
+        try {
+          flow = await generateFlowFromAI(botId);
+        } catch (err) {
+          toast.error(getErrorMessage(err));
+          flow = generateInitialFlow(botType, description);
+          toast('Using a template flow instead. Add an OpenAI API key in Settings for AI-generated flows.', {
+            icon: 'ℹ️',
+            duration: 5000,
+          });
+        }
+      } else {
+        flow = generateInitialFlow(botType, description);
+      }
+      const { nodes: newNodes, edges: newEdges } = flowToReactFlow(flow);
+      setNodes(newNodes);
+      setEdges(newEdges);
+      setHasGenerated(true);
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [botId, botType, description, setNodes, setEdges]);
+
   const handleGenerate = useCallback(() => {
-    const flow = generateInitialFlow(botType, description);
-    const { nodes: newNodes, edges: newEdges } = flowToReactFlow(flow);
-    setNodes(newNodes);
-    setEdges(newEdges);
-    setHasGenerated(true);
-  }, [botType, description, setNodes, setEdges]);
+    if (nodes.length > 0) {
+      setRegenerateConfirmOpen(true);
+      return;
+    }
+    doGenerate();
+  }, [nodes.length, doGenerate]);
 
   const handleSave = useCallback(() => {
     const flow = reactFlowToFlow(nodes, edges);
@@ -196,12 +232,16 @@ function FlowBuilderInner({
             <Save className="w-4 h-4" />
             {isSaving ? 'Saving…' : 'Save flow'}
           </Button>
-          {!hasGenerated && (
-            <Button variant="secondary" onClick={handleGenerate} className="w-full gap-2">
-              <Sparkles className="w-4 h-4" />
-              Generate flow
-            </Button>
-          )}
+          <Button
+            variant="secondary"
+            onClick={handleGenerate}
+            disabled={isGenerating}
+            className="w-full gap-2"
+            title={botId ? 'Generate or regenerate flow using AI from your bot profile and knowledge base' : 'Generate a template flow'}
+          >
+            <Sparkles className="w-4 h-4" />
+            {isGenerating ? 'Generating…' : 'Generate flow'}
+          </Button>
           <div>
             <h3 className="text-sm font-semibold text-brand-textHeading mb-2">Components</h3>
             <div className="space-y-2">
@@ -296,12 +336,24 @@ function FlowBuilderInner({
             <Panel position="top-right">
               {!hasGenerated && (
                 <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
-                  Click &quot;Generate flow&quot; to create a chat flow from your agent type. Then edit and save.
+                  Click &quot;Generate flow&quot; to create a chat flow from your agent profile and knowledge base. Then edit and save.
                 </div>
               )}
             </Panel>
           </ReactFlow>
         </div>
+
+        <ConfirmModal
+          open={regenerateConfirmOpen}
+          onClose={() => setRegenerateConfirmOpen(false)}
+          onConfirm={doGenerate}
+          title="Regenerate flow?"
+          description="This will replace your current flow with an AI-generated one based on your bot profile and knowledge base. You can still edit it after."
+          confirmLabel="Regenerate"
+          cancelLabel="Cancel"
+          variant="default"
+          isLoading={isGenerating}
+        />
       </div>
     </FlowBuilderProvider>
   );
@@ -311,12 +363,14 @@ export function FlowBuilder({
   initialFlow,
   botType,
   description,
+  botId,
   onSave,
   isSaving,
 }: {
   initialFlow: FlowDefinition | null | undefined;
   botType: string;
   description: string;
+  botId?: string;
   onSave: (flow: FlowDefinition) => void;
   isSaving: boolean;
 }) {
@@ -326,6 +380,7 @@ export function FlowBuilder({
         initialFlow={initialFlow}
         botType={botType}
         description={description}
+        botId={botId}
         onSave={onSave}
         isSaving={isSaving}
       />
