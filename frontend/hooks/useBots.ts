@@ -49,6 +49,7 @@ export function useBots() {
       botType?: string;
       systemPrompt?: string;
       assignedSourceIds?: string[];
+      assignedToolIds?: string[];
       flowDefinition?: import('@/lib/flow').FlowDefinition;
       status?: 'draft' | 'published';
       isActive?: boolean;

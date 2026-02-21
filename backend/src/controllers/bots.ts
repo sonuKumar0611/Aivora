@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { Bot, IBot } from '../models/Bot';
 import { KnowledgeSource } from '../models/KnowledgeSource';
 import { KnowledgeChunk } from '../models/KnowledgeChunk';
+import { AgentTool } from '../models/AgentTool';
 import { User } from '../models/User';
 import { AuthRequest } from '../middleware/auth';
 import {
@@ -24,6 +25,7 @@ function toBotResponse(bot: IBot | (Omit<IBot, keyof mongoose.Document> & { _id:
     botType: (b as { botType?: string }).botType ?? 'support',
     systemPrompt: (b as { systemPrompt?: string }).systemPrompt ?? '',
     assignedSourceIds: (b.assignedSourceIds || []).map((id) => id.toString()),
+    assignedToolIds: ((b as { assignedToolIds?: mongoose.Types.ObjectId[] }).assignedToolIds || []).map((id) => id.toString()),
     flowDefinition: (b as { flowDefinition?: { nodes: unknown[]; edges: unknown[] } }).flowDefinition ?? { nodes: [], edges: [] },
     status: (b as { status?: string }).status ?? 'draft',
     isActive: (b as { isActive?: boolean }).isActive !== false,
@@ -69,6 +71,7 @@ const updateBotSchema = z.object({
   botType: z.string().min(1).max(50).optional(),
   systemPrompt: z.string().max(5000).optional(),
   assignedSourceIds: z.array(z.string().min(1)).optional(),
+  assignedToolIds: z.array(z.string().min(1)).optional(),
   flowDefinition: flowDefinitionSchema.optional(),
   status: z.enum(['draft', 'published']).optional(),
   isActive: z.boolean().optional(),
@@ -88,6 +91,7 @@ export async function listBots(req: AuthRequest, res: Response, next: NextFuncti
           botType: (b as { botType?: string }).botType ?? 'support',
           systemPrompt: (b as { systemPrompt?: string }).systemPrompt ?? '',
           assignedSourceIds: (b.assignedSourceIds || []).map((id) => id.toString()),
+          assignedToolIds: ((b as { assignedToolIds?: mongoose.Types.ObjectId[] }).assignedToolIds || []).map((id) => id.toString()),
           flowDefinition: (b as { flowDefinition?: { nodes: unknown[]; edges: unknown[] } }).flowDefinition ?? { nodes: [], edges: [] },
           status: (b as { status?: string }).status ?? 'draft',
           isActive: (b as { isActive?: boolean }).isActive !== false,
@@ -205,6 +209,26 @@ export async function updateBot(req: AuthRequest, res: Response, next: NextFunct
         return;
       }
       setPayload.assignedSourceIds = sourceObjectIds;
+    }
+    if (body.assignedToolIds !== undefined) {
+      const orgId = req.user!.organizationId;
+      if (!orgId) {
+        setPayload.assignedToolIds = [];
+      } else {
+        const toolObjectIds = body.assignedToolIds.map((tid) => new mongoose.Types.ObjectId(tid));
+        const toolsExist = await AgentTool.countDocuments({
+          _id: { $in: toolObjectIds },
+          organizationId: orgId,
+        });
+        if (toolsExist !== toolObjectIds.length) {
+          res.status(400).json({
+            error: 'Validation error',
+            message: 'One or more selected tools do not exist or do not belong to your organization.',
+          });
+          return;
+        }
+        setPayload.assignedToolIds = toolObjectIds;
+      }
     }
     if (body.status === 'published' && !sourceObjectIds) {
       const existing = await Bot.findOne({ _id: id, userId: userObjectId }).select('assignedSourceIds').lean();

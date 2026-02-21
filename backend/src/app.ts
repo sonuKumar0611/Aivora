@@ -11,6 +11,7 @@ import embedRoutes from './routes/embed';
 import analyticsRoutes from './routes/analytics';
 import newsletterRoutes from './routes/newsletter';
 import settingsRoutes from './routes/settings';
+import toolsRoutes from './routes/tools';
 import type { AuthRequest } from './middleware/auth';
 import * as settingsController from './controllers/settings';
 
@@ -60,6 +61,7 @@ app.get('/api/settings/integrations/callback', (req, res, next) =>
   settingsController.oauthCallbackIntegration(req as AuthRequest, res, next)
 );
 app.use('/api/settings', settingsRoutes);
+app.use('/api/tools', toolsRoutes);
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

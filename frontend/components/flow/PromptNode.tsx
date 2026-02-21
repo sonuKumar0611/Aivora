@@ -2,7 +2,7 @@
 
 import { memo, useCallback } from 'react';
 import { Handle, Position, type NodeProps } from 'reactflow';
-import { MessageCircle, Tag, MessageSquareOff, UserPlus, X } from 'lucide-react';
+import { MessageCircle, Tag, MessageSquareOff, UserPlus, Wrench, X } from 'lucide-react';
 import type { FlowNodeData, FlowNodeType } from '@/lib/flow';
 import { clsx } from 'clsx';
 import { useFlowBuilderContext } from './FlowBuilderContext';
@@ -36,6 +36,11 @@ const TYPE_CONFIG: Record<
     icon: UserPlus,
     headerClass: 'bg-emerald-600/90 text-white',
   },
+  tool_call: {
+    label: 'Call tool',
+    icon: Wrench,
+    headerClass: 'bg-indigo-600/90 text-white',
+  },
   // Legacy voice types: show as chat equivalents
   end_call: {
     label: 'End chat',
@@ -68,6 +73,7 @@ function PromptNodeComponent({ data, selected, id }: NodeProps<FlowNodeData>) {
   const isEndOrTransfer =
     nodeType === 'end_chat' || nodeType === 'transfer_to_human' ||
     nodeType === 'end_call' || nodeType === 'transfer_call';
+  const isToolCall = nodeType === 'tool_call';
   const hasPrompt = nodeType === 'prompt' || nodeType === 'conversation' || nodeType === 'message';
 
   return (
@@ -111,6 +117,9 @@ function PromptNodeComponent({ data, selected, id }: NodeProps<FlowNodeData>) {
         )}
         {(nodeType === 'transfer_to_human' || nodeType === 'transfer_call') && (
           <p className="text-xs text-brand-textMuted text-left">Escalate or hand off to a human agent.</p>
+        )}
+        {isToolCall && (
+          <p className="text-xs text-brand-textMuted text-left">When this step is reached, the agent can use an assigned tool (e.g. create event, add row). Assign tools in the Tools tab.</p>
         )}
         {hasPrompt && (
           <textarea

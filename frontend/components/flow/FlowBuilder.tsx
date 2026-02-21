@@ -23,7 +23,7 @@ import { FlowBuilderProvider } from './FlowBuilderContext';
 import { PromptNode } from './PromptNode';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
-import { MessageCircle, MessageSquareOff, UserPlus, Save, Sparkles } from 'lucide-react';
+import { MessageCircle, MessageSquareOff, UserPlus, Wrench, Save, Sparkles } from 'lucide-react';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 import { getErrorMessage } from '@/lib/api';
@@ -71,6 +71,7 @@ function reactFlowToFlow(nodes: Node[], edges: Edge[]): FlowDefinition {
 
 const PALETTE_ITEMS: { type: string; label: string; icon: typeof MessageCircle; nodeType: string }[] = [
   { type: 'conversation', label: 'Conversation', icon: MessageCircle, nodeType: 'conversation' },
+  { type: 'tool_call', label: 'Call tool', icon: Wrench, nodeType: 'tool_call' },
   { type: 'end_chat', label: 'End chat', icon: MessageSquareOff, nodeType: 'end_chat' },
   { type: 'transfer_to_human', label: 'Transfer to human', icon: UserPlus, nodeType: 'transfer_to_human' },
 ];
@@ -264,6 +265,7 @@ function FlowBuilderInner({
                       <p className="font-medium">{item.label}</p>
                       <p className="text-xs text-brand-textMuted">
                         {item.type === 'conversation' && 'Start a conversation with the user.'}
+                        {item.type === 'tool_call' && 'Call an assigned tool (e.g. create event, add row).'}
                         {item.type === 'end_chat' && 'Close the conversation or end this branch.'}
                         {item.type === 'transfer_to_human' && 'Escalate or hand off to a human agent.'}
                       </p>

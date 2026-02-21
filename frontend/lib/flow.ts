@@ -9,6 +9,7 @@ export type FlowNodeType =
   | 'message'
   | 'end_chat'
   | 'transfer_to_human'
+  | 'tool_call'   // Call an assigned tool (e.g. create calendar event, add sheet row)
   | 'end_call'   // legacy: shown as "End chat"
   | 'transfer_call'; // legacy: shown as "Transfer to human"
 
@@ -16,6 +17,8 @@ export interface FlowNodeData {
   label?: string;
   prompt?: string;
   nodeType?: FlowNodeType;
+  /** For tool_call: ID of the AgentTool to invoke when this node is used */
+  toolId?: string;
   [key: string]: unknown;
 }
 

@@ -93,6 +93,68 @@ export interface ChatCompletionResult {
   usage: { promptTokens: number; completionTokens: number; totalTokens: number };
 }
 
+/** Tool definition for OpenAI function calling (id and name identify the tool; parameters schema is built from type). */
+export interface ToolDefForChat {
+  id: string;
+  name: string;
+  description?: string;
+  type: 'google_calendar_create_event' | 'google_calendar_check_availability' | 'google_sheets_create_row';
+}
+
+function buildOpenAITools(tools: ToolDefForChat[]): OpenAI.Chat.Completions.ChatCompletionTool[] {
+  return tools.map((t) => {
+    const base = {
+      type: 'function' as const,
+      function: {
+        name: `tool_${t.id}`,
+        description: t.description || `Execute: ${t.name}`,
+      },
+    };
+    switch (t.type) {
+      case 'google_calendar_create_event':
+        base.function.parameters = {
+          type: 'object',
+          properties: {
+            summary: { type: 'string', description: 'Event title/summary' },
+            startDateTime: { type: 'string', description: 'Start date and time in ISO 8601 format (e.g. 2025-02-21T10:00:00)' },
+            endDateTime: { type: 'string', description: 'End date and time in ISO 8601 format' },
+            description: { type: 'string', description: 'Optional event description' },
+          },
+          required: ['summary', 'startDateTime', 'endDateTime'],
+        };
+        break;
+      case 'google_calendar_check_availability':
+        base.function.parameters = {
+          type: 'object',
+          properties: {
+            timeMin: { type: 'string', description: 'Start of period in ISO 8601 format' },
+            timeMax: { type: 'string', description: 'End of period in ISO 8601 format' },
+          },
+          required: ['timeMin', 'timeMax'],
+        };
+        break;
+      case 'google_sheets_create_row':
+        base.function.parameters = {
+          type: 'object',
+          properties: {
+            values: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Array of cell values for the row, in order',
+            },
+          },
+          required: ['values'],
+        };
+        break;
+      default:
+        base.function.parameters = { type: 'object', properties: {} };
+    }
+    return base;
+  });
+}
+
+const MAX_TOOL_ROUNDS = 5;
+
 export async function getChatCompletion(
   systemPrompt: string,
   messages: { role: 'user' | 'assistant'; content: string }[],
@@ -117,4 +179,106 @@ export async function getChatCompletion(
       }
     : { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
   return { content, usage };
+}
+
+export type ExecuteToolFn = (toolId: string, args: Record<string, unknown>) => Promise<string>;
+
+/**
+ * Chat completion with tool calling. If the model requests tool calls, they are executed and the loop continues until a final text reply or max rounds.
+ */
+export async function getChatCompletionWithTools(
+  systemPrompt: string,
+  messages: { role: 'user' | 'assistant'; content: string }[],
+  tools: ToolDefForChat[],
+  executeTool: ExecuteToolFn,
+  apiKey?: string | null
+): Promise<ChatCompletionResult> {
+  if (tools.length === 0) {
+    return getChatCompletion(systemPrompt, messages, apiKey);
+  }
+
+  const openai = getOpenAI(apiKey);
+  const nameToTool = new Map(tools.map((t) => [`tool_${t.id}`, t]));
+
+  const openaiTools = buildOpenAITools(tools);
+  type Message =
+    | { role: 'user'; content: string }
+    | { role: 'assistant'; content: string | null; tool_calls?: OpenAI.Chat.Completions.ChatCompletionMessageToolCall[] }
+    | { role: 'tool'; tool_call_id: string; content: string };
+
+  let current: Message[] = messages.map((m) => ({ role: m.role, content: m.content }));
+  let totalUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
+  let rounds = 0;
+
+  while (rounds < MAX_TOOL_ROUNDS) {
+    rounds++;
+    const apiMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+      { role: 'system', content: systemPrompt },
+      ...current.map((m) => {
+        if (m.role === 'tool') {
+          return { role: 'tool' as const, tool_call_id: m.tool_call_id, content: m.content };
+        }
+        if (m.role === 'assistant' && m.tool_calls?.length) {
+          return {
+            role: 'assistant' as const,
+            content: m.content ?? '',
+            tool_calls: m.tool_calls,
+          };
+        }
+        return { role: m.role, content: m.content ?? '' };
+      }),
+    ];
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: apiMessages,
+      max_tokens: 1024,
+      tools: openaiTools,
+      tool_choice: 'auto',
+    });
+
+    const choice = response.choices[0];
+    const msg = choice?.message;
+    if (response.usage) {
+      totalUsage.promptTokens += response.usage.prompt_tokens ?? 0;
+      totalUsage.completionTokens += response.usage.completion_tokens ?? 0;
+      totalUsage.totalTokens += response.usage.total_tokens ?? 0;
+    }
+
+    if (!msg) {
+      return { content: 'I could not generate a response.', usage: totalUsage };
+    }
+
+    const toolCalls = msg.tool_calls;
+    if (!toolCalls?.length) {
+      const content = (msg.content ?? '').trim();
+      return { content: content || 'Done.', usage: totalUsage };
+    }
+
+    current.push({
+      role: 'assistant',
+      content: msg.content ?? null,
+      tool_calls: toolCalls,
+    });
+
+    for (const tc of toolCalls) {
+      const fnName = tc.function?.name ?? '';
+      const toolDef = nameToTool.get(fnName);
+      const toolId = toolDef?.id;
+      let result: string;
+      try {
+        const args = (tc.function?.arguments && JSON.parse(tc.function.arguments)) ?? {};
+        result = toolId ? await executeTool(toolId, args) : 'Tool not found.';
+      } catch (err) {
+        result = err instanceof Error ? err.message : 'Tool execution failed.';
+        console.error('[Chat] Tool execution failed:', fnName, toolId, err);
+      }
+      current.push({ role: 'tool', tool_call_id: tc.id, content: result });
+    }
+  }
+
+  return {
+    content: 'I hit the limit of tool calls. Please try again with a simpler request.',
+    usage: totalUsage,
+  };
 }

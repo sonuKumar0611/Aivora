@@ -10,7 +10,9 @@ export interface IFlowPosition {
 export interface IFlowNodeData {
   label?: string;
   prompt?: string;
-  nodeType?: 'prompt' | 'conversation' | 'end_call' | 'transfer_call' | 'message';
+  nodeType?: 'prompt' | 'conversation' | 'end_call' | 'transfer_call' | 'message' | 'tool_call' | 'end_chat' | 'transfer_to_human';
+  /** For tool_call nodes: ID of the AgentTool to invoke */
+  toolId?: string;
 }
 
 /** Stored flow: nodes and edges in React Flow format */
@@ -40,6 +42,8 @@ export interface IBot extends Document {
   botType: string;
   systemPrompt?: string;
   assignedSourceIds: mongoose.Types.ObjectId[];
+  /** IDs of AgentTool documents this agent can use during conversations */
+  assignedToolIds: mongoose.Types.ObjectId[];
   flowDefinition?: IFlowDefinition;
   status: 'draft' | 'published';
   /** When true, published agent responds to chat. When false, returns inactive message. Ignored for draft. */
@@ -91,6 +95,7 @@ const botSchema = new Schema<IBot>(
     botType: { type: String, trim: true, default: 'support' },
     systemPrompt: { type: String, trim: true, default: '' },
     assignedSourceIds: { type: [Schema.Types.ObjectId], ref: 'KnowledgeSource', default: [] },
+    assignedToolIds: { type: [Schema.Types.ObjectId], ref: 'AgentTool', default: [] },
     flowDefinition: { type: flowDefinitionSchema, default: () => ({ nodes: [], edges: [] }) },
     status: { type: String, enum: ['draft', 'published'], default: 'draft' },
     isActive: { type: Boolean, default: true },

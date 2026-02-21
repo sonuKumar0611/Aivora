@@ -138,6 +138,22 @@ export interface FlowDefinition {
   }>;
 }
 
+export type AgentToolType =
+  | 'google_calendar_create_event'
+  | 'google_calendar_check_availability'
+  | 'google_sheets_create_row';
+
+export interface AgentTool {
+  id: string;
+  organizationId: string;
+  name: string;
+  description?: string;
+  type: AgentToolType;
+  config: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Bot {
   id: string;
   name: string;
@@ -146,6 +162,7 @@ export interface Bot {
   botType?: string;
   systemPrompt?: string;
   assignedSourceIds: string[];
+  assignedToolIds?: string[];
   flowDefinition?: FlowDefinition;
   status: 'draft' | 'published';
   /** When false, published agent returns inactive message. Ignored for draft. Default true. */

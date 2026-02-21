@@ -6,6 +6,8 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useBot, useBots } from '@/hooks/useBots';
 import { useKnowledge } from '@/hooks/useKnowledge';
+import { useTools } from '@/hooks/useTools';
+import { useIntegrations } from '@/hooks/useIntegrations';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -15,9 +17,10 @@ import { TONE_OPTIONS, AGENT_TYPE_OPTIONS } from '@/lib/constants';
 import toast from 'react-hot-toast';
 import { getErrorMessage } from '@/lib/api';
 import { formatConversationDate } from '@/lib/format';
-import { ArrowLeft, Code, BookOpen, User, Settings, MessageSquare, BarChart3, MessageCircle, GitBranch, Coins, Smile, Frown, Meh, Calendar, Eye } from 'lucide-react';
+import { ArrowLeft, Code, BookOpen, User, Settings, MessageSquare, BarChart3, MessageCircle, GitBranch, Coins, Smile, Frown, Meh, Calendar, Eye, Wrench, Plus, Trash2, CalendarDays, Sheet } from 'lucide-react';
 import { TestChatPanel } from '@/components/dashboard/TestChatPanel';
 import type { FlowDefinition } from '@/lib/flow';
+import type { AgentToolType } from '@/lib/api';
 
 const FlowBuilder = dynamic(
   () => import('@/components/flow/FlowBuilder').then((m) => m.FlowBuilder),
@@ -34,7 +37,7 @@ import {
   CartesianGrid,
 } from 'recharts';
 
-type TabId = 'profile' | 'kb' | 'flow' | 'chat' | 'preview' | 'settings' | 'analytics';
+type TabId = 'profile' | 'kb' | 'flow' | 'tools' | 'chat' | 'preview' | 'settings' | 'analytics';
 
 export default function AgentEditPage() {
   const params = useParams();
@@ -44,6 +47,8 @@ export default function AgentEditPage() {
   const { bot, isLoading, isError, refetch } = useBot(id);
   const { updateBot, deleteBot, publishBot } = useBots();
   const { sources, isLoading: sourcesLoading } = useKnowledge();
+  const { tools: orgTools, isLoading: toolsLoading, isError: toolsError, createTool, deleteTool } = useTools();
+  const { categories: integrationCategories } = useIntegrations();
   const {
     totalConversations,
     totalMessages,
@@ -56,12 +61,12 @@ export default function AgentEditPage() {
     refetch: refetchAnalytics,
   } = useAnalytics(id);
   const tabFromUrl = searchParams.get('tab');
-  const validTab = tabFromUrl && ['profile', 'kb', 'flow', 'chat', 'preview', 'settings', 'analytics'].includes(tabFromUrl);
+  const validTab = tabFromUrl && ['profile', 'kb', 'flow', 'tools', 'chat', 'preview', 'settings', 'analytics'].includes(tabFromUrl);
   const [activeTab, setActiveTab] = useState<TabId>(validTab ? (tabFromUrl as TabId) : 'profile');
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['profile', 'kb', 'flow', 'chat', 'preview', 'settings', 'analytics'].includes(tab)) {
+    if (tab && ['profile', 'kb', 'flow', 'tools', 'chat', 'preview', 'settings', 'analytics'].includes(tab)) {
       setActiveTab(tab as TabId);
     }
   }, [searchParams]);
@@ -80,8 +85,14 @@ export default function AgentEditPage() {
   const [botType, setBotType] = useState('support');
   const [systemPrompt, setSystemPrompt] = useState('');
   const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>([]);
+  const [selectedToolIds, setSelectedToolIds] = useState<string[]>([]);
   const [origin, setOrigin] = useState('');
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [toolFormOpen, setToolFormOpen] = useState(false);
+  const [newToolName, setNewToolName] = useState('');
+  const [newToolDescription, setNewToolDescription] = useState('');
+  const [newToolType, setNewToolType] = useState<AgentToolType>('google_calendar_create_event');
+  const [newToolConfig, setNewToolConfig] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setOrigin(typeof window !== 'undefined' ? window.location.origin : '');
@@ -95,12 +106,67 @@ export default function AgentEditPage() {
       setBotType(bot.botType ?? 'support');
       setSystemPrompt(bot.systemPrompt ?? '');
       setSelectedSourceIds(bot.assignedSourceIds ?? []);
+      setSelectedToolIds(bot.assignedToolIds ?? []);
     }
   }, [bot]);
+
+  // Drop any selected tool IDs that no longer exist (e.g. after a tool was deleted)
+  useEffect(() => {
+    if (orgTools.length === 0) return;
+    setSelectedToolIds((prev) => prev.filter((id) => orgTools.some((t) => t.id === id)));
+  }, [orgTools, bot?.assignedToolIds]);
 
   const toggleSource = (sourceId: string) => {
     setSelectedSourceIds((prev) =>
       prev.includes(sourceId) ? prev.filter((s) => s !== sourceId) : [...prev, sourceId]
+    );
+  };
+
+  const toggleTool = (toolId: string) => {
+    setSelectedToolIds((prev) =>
+      prev.includes(toolId) ? prev.filter((t) => t !== toolId) : [...prev, toolId]
+    );
+  };
+
+  const saveTools = (e: React.FormEvent) => {
+    e.preventDefault();
+    const validToolIds = selectedToolIds.filter((id) => orgTools.some((t) => t.id === id));
+    updateBot.mutate(
+      { id, assignedToolIds: validToolIds },
+      {
+        onSuccess: () => toast.success('Tools updated'),
+        onError: (err) => toast.error(getErrorMessage(err)),
+      }
+    );
+  };
+
+  const handleCreateTool = (e: React.FormEvent) => {
+    e.preventDefault();
+    const config: Record<string, unknown> = {};
+    if (newToolType.startsWith('google_calendar')) {
+      if (newToolConfig.calendarId) config.calendarId = newToolConfig.calendarId.trim();
+    } else if (newToolType === 'google_sheets_create_row') {
+      if (newToolConfig.spreadsheetId) config.spreadsheetId = newToolConfig.spreadsheetId.trim();
+      if (newToolConfig.sheetName) config.sheetName = newToolConfig.sheetName.trim();
+      if (newToolConfig.columns) config.columns = newToolConfig.columns.split(',').map((c) => c.trim()).filter(Boolean);
+    }
+    createTool.mutate(
+      {
+        name: newToolName.trim(),
+        description: newToolDescription.trim() || undefined,
+        type: newToolType,
+        config: Object.keys(config).length ? config : undefined,
+      },
+      {
+        onSuccess: () => {
+          toast.success('Tool created');
+          setToolFormOpen(false);
+          setNewToolName('');
+          setNewToolDescription('');
+          setNewToolConfig({});
+        },
+        onError: (err) => toast.error(getErrorMessage(err)),
+      }
     );
   };
 
@@ -207,11 +273,24 @@ export default function AgentEditPage() {
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'kb', label: 'Knowledge base', icon: BookOpen },
     { id: 'flow', label: 'Flow', icon: GitBranch },
+    { id: 'tools', label: 'Tools', icon: Wrench },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'chat', label: 'Test Chat', icon: MessageSquare },
     { id: 'preview', label: 'Preview script', icon: Code },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
+
+  const googleCalendarConnected = integrationCategories.some((c) =>
+    c.integrations.some((i) => i.id === 'google_calendar' && i.connected)
+  );
+  const googleSheetsConnected = integrationCategories.some((c) =>
+    c.integrations.some((i) => i.id === 'google_sheets' && i.connected)
+  );
+  const TOOL_TYPE_LABELS: Record<AgentToolType, string> = {
+    google_calendar_create_event: 'Create calendar event',
+    google_calendar_check_availability: 'Check calendar availability',
+    google_sheets_create_row: 'Add row to Google Sheet',
+  };
 
   return (
     <div className="h-full flex flex-col space-y-6 animate-fade-in pb-10">
@@ -401,6 +480,180 @@ export default function AgentEditPage() {
                 </Button>
               </div>
             </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tab: Tools */}
+      {activeTab === 'tools' && (
+        <Card>
+          <CardHeader className="pb-2">
+            <h2 className="font-semibold text-brand-textHeading">Tools</h2>
+            <p className="text-sm text-brand-textMuted mt-2">
+              Create tools (e.g. book calendar events, add rows to sheets) and assign them to this agent. The agent can use them during conversations when users ask to schedule or record something.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-6 pt-8 pb-8">
+            {!googleCalendarConnected && !googleSheetsConnected && (
+              <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-brand-text">
+                <p className="font-medium text-amber-600 dark:text-amber-400">Connect integrations first</p>
+                <p className="mt-1 text-brand-textMuted">
+                  Tools use Google Calendar and Google Sheets. Connect them in{' '}
+                  <Link href="/dashboard/integrations" className="text-brand-primary hover:underline">
+                    Dashboard → Integrations
+                  </Link>
+                  .
+                </p>
+              </div>
+            )}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-brand-text">Assign tools to this agent</label>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setToolFormOpen((o) => !o)}
+                  className="gap-1"
+                >
+                  <Plus className="w-4 h-4" />
+                  Create tool
+                </Button>
+              </div>
+              {toolFormOpen && (
+                <form onSubmit={handleCreateTool} className="mb-6 p-4 rounded-lg border border-brand-borderLight bg-brand-sidebar space-y-4">
+                  <input
+                    type="text"
+                    value={newToolName}
+                    onChange={(e) => setNewToolName(e.target.value)}
+                    placeholder="Tool name (e.g. Book site visit)"
+                    className="w-full rounded-lg border border-brand-borderLight bg-brand-bgCard px-3 py-2 text-sm text-brand-text"
+                    required
+                  />
+                  <textarea
+                    value={newToolDescription}
+                    onChange={(e) => setNewToolDescription(e.target.value)}
+                    placeholder="Description for the AI (e.g. Creates a site visit event in Google Calendar)"
+                    rows={2}
+                    className="w-full rounded-lg border border-brand-borderLight bg-brand-bgCard px-3 py-2 text-sm text-brand-text"
+                  />
+                  <div>
+                    <label className="block text-xs font-medium text-brand-textMuted mb-1">Type</label>
+                    <select
+                      value={newToolType}
+                      onChange={(e) => setNewToolType(e.target.value as AgentToolType)}
+                      className="w-full rounded-lg border border-brand-borderLight bg-brand-bgCard px-3 py-2 text-sm text-brand-text"
+                    >
+                      <option value="google_calendar_create_event">Create calendar event</option>
+                      <option value="google_calendar_check_availability">Check calendar availability</option>
+                      <option value="google_sheets_create_row">Add row to Google Sheet</option>
+                    </select>
+                  </div>
+                  {newToolType.startsWith('google_calendar') && !googleCalendarConnected && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400">Connect Google Calendar in Integrations first.</p>
+                  )}
+                  {newToolType === 'google_sheets_create_row' && (
+                    <>
+                      {!googleSheetsConnected && (
+                        <p className="text-xs text-amber-600 dark:text-amber-400">Connect Google Sheets in Integrations first.</p>
+                      )}
+                      <input
+                        type="text"
+                        value={newToolConfig.spreadsheetId ?? ''}
+                        onChange={(e) => setNewToolConfig((c) => ({ ...c, spreadsheetId: e.target.value }))}
+                        placeholder="Spreadsheet ID (from sheet URL)"
+                        className="w-full rounded-lg border border-brand-borderLight bg-brand-bgCard px-3 py-2 text-sm text-brand-text"
+                      />
+                      <input
+                        type="text"
+                        value={newToolConfig.sheetName ?? ''}
+                        onChange={(e) => setNewToolConfig((c) => ({ ...c, sheetName: e.target.value }))}
+                        placeholder="Sheet name (e.g. Sheet1)"
+                        className="w-full rounded-lg border border-brand-borderLight bg-brand-bgCard px-3 py-2 text-sm text-brand-text"
+                      />
+                      <input
+                        type="text"
+                        value={newToolConfig.columns ?? ''}
+                        onChange={(e) => setNewToolConfig((c) => ({ ...c, columns: e.target.value }))}
+                        placeholder="Column names comma-separated (e.g. name, email, notes)"
+                        className="w-full rounded-lg border border-brand-borderLight bg-brand-bgCard px-3 py-2 text-sm text-brand-text"
+                      />
+                    </>
+                  )}
+                  {(newToolType === 'google_calendar_create_event' || newToolType === 'google_calendar_check_availability') && (
+                    <input
+                      type="text"
+                      value={newToolConfig.calendarId ?? ''}
+                      onChange={(e) => setNewToolConfig((c) => ({ ...c, calendarId: e.target.value }))}
+                      placeholder="Calendar ID (leave blank for primary)"
+                      className="w-full rounded-lg border border-brand-borderLight bg-brand-bgCard px-3 py-2 text-sm text-brand-text"
+                    />
+                  )}
+                  <div className="flex gap-2">
+                    <Button type="submit" disabled={createTool.isPending || !newToolName.trim()}>
+                      {createTool.isPending ? 'Creating…' : 'Create tool'}
+                    </Button>
+                    <Button type="button" variant="secondary" onClick={() => setToolFormOpen(false)}>
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+              )}
+              {toolsLoading ? (
+                <p className="text-sm text-brand-textMuted">Loading tools…</p>
+              ) : toolsError ? (
+                <p className="text-sm text-brand-textMuted">Only owners and admins can manage tools. Ask your team admin to create tools and assign them to this agent.</p>
+              ) : orgTools.length === 0 ? (
+                <div className="rounded-lg border border-brand-borderLight bg-brand-sidebar/50 p-6 text-center">
+                  <Wrench className="w-8 h-8 mx-auto text-brand-textMuted mb-2" />
+                  <p className="text-sm text-brand-textMuted">No tools yet.</p>
+                  <p className="text-xs text-brand-textMuted mt-1">Create a tool above, or in Integrations connect Google Calendar/Sheets first.</p>
+                </div>
+              ) : (
+                <form onSubmit={saveTools} className="space-y-2">
+                  <div className="rounded-lg border border-brand-borderLight bg-brand-sidebar max-h-64 overflow-y-auto space-y-2 p-2">
+                    {orgTools.map((t) => (
+                      <label
+                        key={t.id}
+                        className="flex items-center gap-3 cursor-pointer hover:bg-brand-bgCardHover rounded-lg px-3 py-2"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedToolIds.includes(t.id)}
+                          onChange={() => toggleTool(t.id)}
+                          className="rounded border-brand-borderLight text-brand-primary focus:ring-brand-primary"
+                        />
+                        <span className="flex-1 min-w-0">
+                          <span className="text-sm font-medium text-brand-text block truncate">{t.name}</span>
+                          <span className="text-xs text-brand-textMuted flex items-center gap-1 mt-0.5">
+                            {t.type.startsWith('google_calendar') ? <CalendarDays className="w-3 h-3" /> : <Sheet className="w-3 h-3" />}
+                            {TOOL_TYPE_LABELS[t.type]}
+                          </span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (confirm('Delete this tool? Agents using it will no longer have access.')) {
+                              deleteTool.mutate(t.id);
+                            }
+                          }}
+                          className="p-1 rounded text-brand-textMuted hover:text-red-500 hover:bg-red-500/10"
+                          title="Delete tool"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </label>
+                    ))}
+                  </div>
+                  <div className="pt-2 border-t border-brand-borderLight">
+                    <Button type="submit" disabled={updateBot.isPending}>
+                      {updateBot.isPending ? 'Saving…' : 'Save assigned tools'}
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}

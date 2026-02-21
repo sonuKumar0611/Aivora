@@ -11,7 +11,10 @@ import {
   resolveOpenAIKey,
 } from '../services/openai';
 import { findSimilarChunks } from '../services/vectorSearch';
-import { buildSystemPrompt, getChatCompletion, getFlowInstruction } from '../services/chatCompletion';
+import { buildSystemPrompt, getChatCompletion, getChatCompletionWithTools, type ToolDefForChat } from '../services/chatCompletion';
+import { getFlowInstruction } from '../services/chatCompletion';
+import { executeTool } from '../services/toolExecution';
+import { AgentTool } from '../models/AgentTool';
 import { aggregateSentiment } from '../services/sentiment';
 import { env } from '../utils/env';
 
@@ -115,13 +118,17 @@ export async function chat(req: AuthRequest, res: Response, next: NextFunction):
     const customPrompt = (bot as { systemPrompt?: string }).systemPrompt;
     const flowDefinition = (bot as { flowDefinition?: unknown }).flowDefinition;
     const flowInstruction = getFlowInstruction(flowDefinition);
-    const systemPrompt = await buildSystemPrompt(
+    let systemPrompt = await buildSystemPrompt(
       bot.description,
       bot.tone,
       contextTexts,
       customPrompt,
       flowInstruction
     );
+    const assignedToolIds = (bot as { assignedToolIds?: mongoose.Types.ObjectId[] }).assignedToolIds ?? [];
+    if (assignedToolIds.length > 0 && organizationId) {
+      systemPrompt += '\n\nYou have access to tools (e.g. create calendar event, check availability, add row to sheet). When the user wants to schedule, book, or record something, use the appropriate tool with the information they provided.';
+    }
 
     let chatDoc = null;
     if (body.conversationId) {
@@ -147,14 +154,44 @@ export async function chat(req: AuthRequest, res: Response, next: NextFunction):
       .slice(-20)
       .map((m: { role: string; content: string }) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
 
-    const completion = await getChatCompletion(
-      systemPrompt,
-      [
-        ...historyMessages,
-        { role: 'user', content: body.message },
-      ],
-      openaiKey
-    );
+    let toolsForChat: ToolDefForChat[] = [];
+    if (assignedToolIds.length > 0 && organizationId) {
+      const toolDocs = await AgentTool.find({
+        _id: { $in: assignedToolIds },
+        organizationId: new mongoose.Types.ObjectId(organizationId),
+      })
+        .select('_id name description type')
+        .lean();
+      toolsForChat = toolDocs.map((t) => ({
+        id: (t as { _id: mongoose.Types.ObjectId })._id.toString(),
+        name: (t as { name: string }).name,
+        description: (t as { description?: string }).description ?? '',
+        type: (t as { type: string }).type as ToolDefForChat['type'],
+      }));
+    }
+
+    const executeToolForOrg = (toolId: string, args: Record<string, unknown>) =>
+      executeTool(toolId, organizationId!, args);
+
+    const completion = toolsForChat.length > 0
+      ? await getChatCompletionWithTools(
+          systemPrompt,
+          [
+            ...historyMessages,
+            { role: 'user', content: body.message },
+          ],
+          toolsForChat,
+          executeToolForOrg,
+          openaiKey
+        )
+      : await getChatCompletion(
+          systemPrompt,
+          [
+            ...historyMessages,
+            { role: 'user', content: body.message },
+          ],
+          openaiKey
+        );
     const reply = completion.content;
 
     chatDoc.messages.push(
