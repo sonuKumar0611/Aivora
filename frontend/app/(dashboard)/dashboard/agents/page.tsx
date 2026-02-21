@@ -11,20 +11,27 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { Bot, Plus, Search } from 'lucide-react';
 import { AgentCard } from '@/components/agents/AgentCard';
 
+type StatusFilter = 'all' | 'draft' | 'published';
+
 export default function AgentsPage() {
   const { bots, isLoading, isError, refetch } = useBots();
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
 
   const filteredBots = useMemo(() => {
-    if (!search.trim()) return bots;
+    let list = bots;
+    if (statusFilter !== 'all') {
+      list = list.filter((b) => (b.status ?? 'draft') === statusFilter);
+    }
+    if (!search.trim()) return list;
     const q = search.trim().toLowerCase();
-    return bots.filter(
+    return list.filter(
       (b) =>
         b.name.toLowerCase().includes(q) ||
         b.tone.toLowerCase().includes(q) ||
         (b.description && b.description.toLowerCase().includes(q))
     );
-  }, [bots, search]);
+  }, [bots, search, statusFilter]);
 
   return (
     <div className="h-full flex flex-col animate-fade-in">
@@ -78,15 +85,33 @@ export default function AgentsPage() {
           </Card>
         ) : (
           <>
-            <div className="relative shrink-0 mb-4 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-textMuted pointer-events-none" />
-              <input
-                type="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search agents..."
-                className="w-full pl-9 pr-3 py-2 rounded-lg border border-brand-borderLight bg-brand-sidebar text-brand-text text-sm placeholder-brand-textDisabled focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-              />
+            <div className="shrink-0 mb-4 flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="relative max-w-sm flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-textMuted pointer-events-none" />
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search agents..."
+                  className="w-full pl-9 pr-3 py-2 rounded-lg border border-brand-borderLight bg-brand-sidebar text-brand-text text-sm placeholder-brand-textDisabled focus:ring-2 focus:ring-brand-primary focus:border-transparent"
+                />
+              </div>
+              <div className="flex rounded-lg border border-brand-borderLight bg-brand-sidebar p-0.5">
+                {(['all', 'draft', 'published'] as const).map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setStatusFilter(value)}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                      statusFilter === value
+                        ? 'bg-brand-primary text-white shadow-sm'
+                        : 'text-brand-textMuted hover:text-brand-text hover:bg-white/5'
+                    }`}
+                  >
+                    {value === 'all' ? 'All' : value === 'draft' ? 'Draft' : 'Published'}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="flex-1 min-h-0 overflow-auto">
               {filteredBots.length === 0 ? (
@@ -103,6 +128,10 @@ export default function AgentsPage() {
                       tone={bot.tone}
                       description={bot.description ?? ''}
                       status={bot.status ?? 'draft'}
+                      botType={bot.botType}
+                      knowledgeCount={bot.assignedSourceIds?.length ?? 0}
+                      updatedAt={bot.updatedAt}
+                      isActive={bot.isActive}
                     />
                   ))}
                 </div>
