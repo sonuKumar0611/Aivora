@@ -15,6 +15,7 @@ function toBotResponse(bot: IBot | (Omit<IBot, keyof mongoose.Document> & { _id:
     botType: (b as { botType?: string }).botType ?? 'support',
     systemPrompt: (b as { systemPrompt?: string }).systemPrompt ?? '',
     assignedSourceIds: (b.assignedSourceIds || []).map((id) => id.toString()),
+    flowDefinition: (b as { flowDefinition?: { nodes: unknown[]; edges: unknown[] } }).flowDefinition ?? { nodes: [], edges: [] },
     status: (b as { status?: string }).status ?? 'draft',
     createdAt: b.createdAt,
     updatedAt: b.updatedAt,
@@ -31,6 +32,26 @@ const createBotSchema = z.object({
   status: z.enum(['draft', 'published']).optional().default('draft'),
 });
 
+const flowNodeSchema = z.object({
+  id: z.string().min(1),
+  type: z.string().optional(),
+  position: z.object({ x: z.number(), y: z.number() }),
+  data: z.record(z.unknown()).optional().default({}),
+});
+const flowEdgeSchema = z.object({
+  id: z.string().min(1),
+  source: z.string().min(1),
+  target: z.string().min(1),
+  sourceHandle: z.string().nullable().optional(),
+  targetHandle: z.string().nullable().optional(),
+  label: z.string().optional(),
+  data: z.record(z.unknown()).optional(),
+});
+const flowDefinitionSchema = z.object({
+  nodes: z.array(flowNodeSchema).default([]),
+  edges: z.array(flowEdgeSchema).default([]),
+});
+
 const updateBotSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   description: z.string().min(1).max(2000).optional(),
@@ -38,6 +59,7 @@ const updateBotSchema = z.object({
   botType: z.string().min(1).max(50).optional(),
   systemPrompt: z.string().max(5000).optional(),
   assignedSourceIds: z.array(z.string().min(1)).optional(),
+  flowDefinition: flowDefinitionSchema.optional(),
   status: z.enum(['draft', 'published']).optional(),
 });
 
@@ -55,6 +77,7 @@ export async function listBots(req: AuthRequest, res: Response, next: NextFuncti
           botType: (b as { botType?: string }).botType ?? 'support',
           systemPrompt: (b as { systemPrompt?: string }).systemPrompt ?? '',
           assignedSourceIds: (b.assignedSourceIds || []).map((id) => id.toString()),
+          flowDefinition: (b as { flowDefinition?: { nodes: unknown[]; edges: unknown[] } }).flowDefinition ?? { nodes: [], edges: [] },
           status: (b as { status?: string }).status ?? 'draft',
           createdAt: b.createdAt,
           updatedAt: b.updatedAt,

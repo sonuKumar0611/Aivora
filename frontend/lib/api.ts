@@ -120,6 +120,24 @@ export interface AuthData {
   expiresIn: string;
 }
 
+export interface FlowDefinition {
+  nodes: Array<{
+    id: string;
+    type?: string;
+    position: { x: number; y: number };
+    data: Record<string, unknown>;
+  }>;
+  edges: Array<{
+    id: string;
+    source: string;
+    target: string;
+    sourceHandle?: string | null;
+    targetHandle?: string | null;
+    label?: string;
+    data?: Record<string, unknown>;
+  }>;
+}
+
 export interface Bot {
   id: string;
   name: string;
@@ -128,6 +146,7 @@ export interface Bot {
   botType?: string;
   systemPrompt?: string;
   assignedSourceIds: string[];
+  flowDefinition?: FlowDefinition;
   status: 'draft' | 'published';
   createdAt: string;
   updatedAt: string;

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useBot, useBots } from '@/hooks/useBots';
@@ -13,8 +14,14 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { TONE_OPTIONS, AGENT_TYPE_OPTIONS } from '@/lib/constants';
 import toast from 'react-hot-toast';
 import { getErrorMessage } from '@/lib/api';
-import { ArrowLeft, Code, BookOpen, User, Settings, MessageSquare, BarChart3, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Code, BookOpen, User, Settings, MessageSquare, BarChart3, MessageCircle, GitBranch } from 'lucide-react';
 import { TestChatPanel } from '@/components/dashboard/TestChatPanel';
+import type { FlowDefinition } from '@/lib/flow';
+
+const FlowBuilder = dynamic(
+  () => import('@/components/flow/FlowBuilder').then((m) => m.FlowBuilder),
+  { ssr: false, loading: () => <div className="flex items-center justify-center min-h-[400px] text-brand-textMuted">Loading flow builder…</div> }
+);
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import {
   BarChart,
@@ -26,7 +33,7 @@ import {
   CartesianGrid,
 } from 'recharts';
 
-type TabId = 'profile' | 'kb' | 'chat' | 'preview' | 'settings' | 'analytics';
+type TabId = 'profile' | 'kb' | 'flow' | 'chat' | 'preview' | 'settings' | 'analytics';
 
 export default function AgentEditPage() {
   const params = useParams();
@@ -178,6 +185,7 @@ export default function AgentEditPage() {
   const tabs: { id: TabId; label: string; icon: typeof User }[] = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'kb', label: 'Knowledge base', icon: BookOpen },
+    { id: 'flow', label: 'Flow', icon: GitBranch },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'chat', label: 'Test Chat', icon: MessageSquare },
     { id: 'preview', label: 'Preview script', icon: Code },
@@ -374,6 +382,25 @@ export default function AgentEditPage() {
             </form>
           </CardContent>
         </Card>
+      )}
+
+      {/* Tab: Flow */}
+      {activeTab === 'flow' && (
+        <FlowBuilder
+          initialFlow={bot?.flowDefinition as FlowDefinition | undefined}
+          botType={botType}
+          description={description}
+          onSave={(flow: FlowDefinition) => {
+            updateBot.mutate(
+              { id, flowDefinition: flow },
+              {
+                onSuccess: () => toast.success('Flow saved'),
+                onError: (err) => toast.error(getErrorMessage(err)),
+              }
+            );
+          }}
+          isSaving={updateBot.isPending}
+        />
       )}
 
       {/* Tab: Analytics */}

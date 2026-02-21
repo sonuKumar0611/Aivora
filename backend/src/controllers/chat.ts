@@ -11,7 +11,7 @@ import {
   resolveOpenAIKey,
 } from '../services/openai';
 import { findSimilarChunks } from '../services/vectorSearch';
-import { buildSystemPrompt, getChatCompletion } from '../services/chatCompletion';
+import { buildSystemPrompt, getChatCompletion, getFlowStartInstruction } from '../services/chatCompletion';
 import { env } from '../utils/env';
 
 const chatSchema = z.object({
@@ -72,11 +72,14 @@ export async function chat(req: AuthRequest, res: Response, next: NextFunction):
     const similarChunks = await findSimilarChunks(bot._id, queryEmbedding, 5);
     const contextTexts = similarChunks.map((c) => c.text);
     const customPrompt = (bot as { systemPrompt?: string }).systemPrompt;
+    const flowDefinition = (bot as { flowDefinition?: unknown }).flowDefinition;
+    const flowInstruction = getFlowStartInstruction(flowDefinition);
     const systemPrompt = await buildSystemPrompt(
       bot.description,
       bot.tone,
       contextTexts,
-      customPrompt
+      customPrompt,
+      flowInstruction
     );
 
     let chatDoc = null;

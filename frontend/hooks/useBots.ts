@@ -49,6 +49,7 @@ export function useBots() {
       botType?: string;
       systemPrompt?: string;
       assignedSourceIds?: string[];
+      flowDefinition?: import('@/lib/flow').FlowDefinition;
       status?: 'draft' | 'published';
     }) => {
       const { data } = await api.put<{ data: { bot: Bot } }>(`/bots/${id}`, body);
