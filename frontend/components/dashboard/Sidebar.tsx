@@ -152,7 +152,7 @@ export function Sidebar() {
         <div className={clsx('flex-shrink-0 flex items-center justify-center py-3', collapsed ? 'px-2' : 'px-3')}>
           <span
             className={clsx(
-              'relative rounded-lg bg-white/5 flex items-center justify-center overflow-hidden',
+              'relative rounded-lg flex items-center justify-center overflow-hidden',
               collapsed ? 'sidebar-spline-robot-collapsed h-14 w-14' : 'sidebar-spline-robot h-[90px] w-[140px]'
             )}
           >
