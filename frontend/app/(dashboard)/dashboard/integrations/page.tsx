@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { useIntegrations } from '@/hooks/useIntegrations';
+import { useIntegrations, OAUTH_PROVIDERS } from '@/hooks/useIntegrations';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -56,7 +57,7 @@ function IntegrationCard({
             <div className="flex items-center gap-2 flex-wrap">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-green-500/15 text-green-400 text-sm font-medium">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
-                Connected
+                {item.linkedEmail ? `Connected as ${item.linkedEmail}` : 'Connected'}
               </span>
               <Button
                 variant="secondary"
@@ -85,9 +86,12 @@ function IntegrationCard({
 }
 
 export default function IntegrationsPage() {
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const isHigherUp = user?.role === 'owner' || user?.role === 'admin';
-  const { categories, isLoading, isError, refetch, connect, disconnect } = useIntegrations({ enabled: isHigherUp });
+  const { categories, isLoading, isError, refetch, connect, connectWithOAuth, disconnect } = useIntegrations({
+    enabled: isHigherUp,
+  });
   const [search, setSearch] = useState('');
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const hasExpandedInitial = useRef(false);
@@ -98,6 +102,19 @@ export default function IntegrationsPage() {
       setExpandedCategories(new Set(categories.map((c) => c.category)));
     }
   }, [categories]);
+
+  useEffect(() => {
+    const connected = searchParams.get('connected');
+    const error = searchParams.get('error');
+    if (connected) {
+      toast.success(`${connected === 'google_calendar' ? 'Google Calendar' : 'Google Sheets'} connected`);
+      refetch();
+      window.history.replaceState({}, '', '/dashboard/integrations');
+    } else if (error) {
+      toast.error(decodeURIComponent(error));
+      window.history.replaceState({}, '', '/dashboard/integrations');
+    }
+  }, [searchParams, refetch]);
 
   const filteredCategories = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -243,10 +260,16 @@ export default function IntegrationsPage() {
                         key={item.id}
                         item={item}
                         onConnect={(id) => {
-                          connect.mutate(id, {
-                            onSuccess: () => toast.success(`${item.name} connected`),
-                            onError: (err) => toast.error(getErrorMessage(err)),
-                          });
+                          if (OAUTH_PROVIDERS.includes(id)) {
+                            connectWithOAuth.mutate(id, {
+                              onError: (err) => toast.error(getErrorMessage(err)),
+                            });
+                          } else {
+                            connect.mutate(id, {
+                              onSuccess: () => toast.success(`${item.name} connected`),
+                              onError: (err) => toast.error(getErrorMessage(err)),
+                            });
+                          }
                         }}
                         onDisconnect={(id) => {
                           disconnect.mutate(id, {
@@ -254,7 +277,10 @@ export default function IntegrationsPage() {
                             onError: (err) => toast.error(getErrorMessage(err)),
                           });
                         }}
-                        isConnecting={connect.isPending && connect.variables === item.id}
+                        isConnecting={
+                          (connect.isPending && connect.variables === item.id) ||
+                          (connectWithOAuth.isPending && connectWithOAuth.variables === item.id)
+                        }
                         isDisconnecting={disconnect.isPending && disconnect.variables === item.id}
                       />
                     ))}

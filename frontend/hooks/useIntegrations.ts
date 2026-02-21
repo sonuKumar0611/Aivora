@@ -3,6 +3,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, type IntegrationsResponse, type IntegrationProvider } from '@/lib/api';
 
+/** Google integrations use OAuth; others use simple connect. */
+export const OAUTH_PROVIDERS: IntegrationProvider[] = ['google_calendar', 'google_sheets'];
+
 export function useIntegrations(options?: { enabled?: boolean }) {
   const queryClient = useQueryClient();
   const enabled = options?.enabled ?? true;
@@ -28,6 +31,19 @@ export function useIntegrations(options?: { enabled?: boolean }) {
     },
   });
 
+  /** For Google integrations: get OAuth URL and redirect. Call this instead of connect.mutate for OAUTH_PROVIDERS. */
+  const connectWithOAuth = useMutation({
+    mutationFn: async (provider: IntegrationProvider) => {
+      const { data: res } = await api.get<{ data: { redirectUrl: string } }>(
+        `/settings/integrations/${provider}/oauth`
+      );
+      if (typeof window !== 'undefined' && res.data.redirectUrl) {
+        window.location.href = res.data.redirectUrl;
+      }
+      return res.data;
+    },
+  });
+
   const disconnect = useMutation({
     mutationFn: async (provider: IntegrationProvider) => {
       await api.delete(`/settings/integrations/${provider}/disconnect`);
@@ -44,6 +60,7 @@ export function useIntegrations(options?: { enabled?: boolean }) {
     isError,
     refetch,
     connect,
+    connectWithOAuth,
     disconnect,
   };
 }

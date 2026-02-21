@@ -11,6 +11,8 @@ import embedRoutes from './routes/embed';
 import analyticsRoutes from './routes/analytics';
 import newsletterRoutes from './routes/newsletter';
 import settingsRoutes from './routes/settings';
+import type { AuthRequest } from './middleware/auth';
+import * as settingsController from './controllers/settings';
 
 const app = express();
 
@@ -53,6 +55,10 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/embed', embedRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/newsletter', newsletterRoutes);
+// OAuth callback (no auth – user is redirected here by Google)
+app.get('/api/settings/integrations/callback', (req, res, next) =>
+  settingsController.oauthCallbackIntegration(req as AuthRequest, res, next)
+);
 app.use('/api/settings', settingsRoutes);
 
 app.get('/health', (_req, res) => {

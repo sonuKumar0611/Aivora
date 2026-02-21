@@ -25,6 +25,7 @@ router.put('/team/:id', settingsController.updateMember);
 router.delete('/team/:id', settingsController.removeOrSuspendMember);
 
 router.get('/integrations', requireRole(['owner', 'admin']), settingsController.listIntegrations);
+router.get('/integrations/:provider/oauth', requireRole(['owner', 'admin']), settingsController.oauthInitIntegration);
 router.post('/integrations/:provider/connect', requireRole(['owner', 'admin']), settingsController.connectIntegration);
 router.delete('/integrations/:provider/disconnect', requireRole(['owner', 'admin']), settingsController.disconnectIntegration);
 

@@ -10,8 +10,13 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 characters'),
   OPENAI_API_KEY: z.string().optional(), // required only for knowledge/chat
   FRONTEND_URL: z.string().url().default('http://localhost:3000'),
+  /** Public URL of this API (for OAuth redirect_uri). Defaults to http://localhost:4000 in dev. */
+  API_PUBLIC_URL: z.string().url().optional(),
   EMAIL_SENDER: z.string().email().optional(),
   GMAIL_APP_PASSWORD: z.string().optional(),
+  /** Google OAuth for Calendar/Sheets integrations */
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

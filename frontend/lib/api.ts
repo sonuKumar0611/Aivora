@@ -171,6 +171,8 @@ export interface IntegrationItem {
   category: string;
   connected: boolean;
   connectedAt?: string;
+  /** Set when connected via OAuth (e.g. Google account email). */
+  linkedEmail?: string;
 }
 
 export interface IntegrationsResponse {
