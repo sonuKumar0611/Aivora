@@ -55,7 +55,9 @@ export default function AgentEditPage() {
     isError: analyticsError,
     refetch: refetchAnalytics,
   } = useAnalytics(id);
-  const [activeTab, setActiveTab] = useState<TabId>('profile');
+  const tabFromUrl = searchParams.get('tab');
+  const validTab = tabFromUrl && ['profile', 'kb', 'flow', 'chat', 'preview', 'settings', 'analytics'].includes(tabFromUrl);
+  const [activeTab, setActiveTab] = useState<TabId>(validTab ? (tabFromUrl as TabId) : 'profile');
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -63,6 +65,14 @@ export default function AgentEditPage() {
       setActiveTab(tab as TabId);
     }
   }, [searchParams]);
+
+  const setTab = (tab: TabId) => {
+    setActiveTab(tab);
+    const path = `/dashboard/agents/${id}`;
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', tab);
+    router.replace(`${path}?${params.toString()}`, { scroll: false });
+  };
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -243,7 +253,7 @@ export default function AgentEditPage() {
             <button
               key={tab.id}
               type="button"
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => setTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 isActive
                   ? 'bg-brand-bgCard text-brand-textHeading shadow-sm'
